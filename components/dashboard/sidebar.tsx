@@ -142,13 +142,7 @@ export function Sidebar() {
 
 			{/* FOOTER */}
 			<div className="p-4 border-t">
-				{collapsed ? (
-					<div className="flex justify-center transition-opacity duration-300">
-						<LogOut />
-					</div>
-				) : (
-					<LogoutButton />
-				)}
+				{collapsed ? <LogoutButton iconOnly /> : <LogoutButton />}
 			</div>
 		</div>
 	);

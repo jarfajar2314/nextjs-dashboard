@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useSidebar } from "./sidebar-context";
 import { UserMenu } from "./user-menu";
 import { ThemeSwitcher } from "../theme-switcher";
+import { ThemeSelector } from "../theme-selector";
 
 export function Topbar() {
 	const { toggle } = useSidebar();
@@ -21,6 +22,7 @@ export function Topbar() {
 				Dashboard
 			</div>
 			<div className="flex items-center gap-2">
+				<ThemeSelector />
 				<ThemeSwitcher />
 				<UserMenu />
 			</div>
