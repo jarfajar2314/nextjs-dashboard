@@ -7,6 +7,14 @@ import { nextCookies } from "better-auth/next-js";
 export const auth = betterAuth({
 	appName: "Dashboard Project",
 
+	// Enable email change feature
+	user: {
+		changeEmail: {
+			enabled: true,
+			updateEmailWithoutVerification: true, // without verification for now
+		},
+	},
+
 	// Enable email/password login
 	emailAndPassword: {
 		enabled: true,
@@ -17,7 +25,11 @@ export const auth = betterAuth({
 		provider: "postgresql",
 	}),
 
-	trustedOrigins: ["http://localhost:3002"],
+	trustedOrigins: [
+		"http://localhost:3002",
+		"http://127.0.0.1:3002",
+		"http://0.0.0.0:3002",
+	],
 
 	// Required for Next.js App Router cookie handling
 	plugins: [nextCookies()],

@@ -19,7 +19,7 @@ export function Topbar() {
 			</button>
 
 			<div className="font-medium text-lg flex-1 text-left">
-				Dashboard
+				{/* Dashboard */}
 			</div>
 			<div className="flex items-center gap-2">
 				<ThemeSelector />

@@ -29,6 +29,7 @@ export function UserMenu() {
 				.split(" ")
 				.map((n) => n[0])
 				.join("")
+				.slice(0, 2)
 				.toUpperCase()
 		: "U";
 
@@ -66,7 +67,9 @@ export function UserMenu() {
 
 				<DropdownMenuSeparator />
 
-				<DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => router.push("/settings/profile")}
+				>
 					<User className="mr-2 h-4 w-4" />
 					<span>Profile</span>
 				</DropdownMenuItem>
