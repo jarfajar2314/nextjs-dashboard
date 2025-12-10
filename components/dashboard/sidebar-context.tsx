@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 type SidebarContextType = {
 	collapsed: boolean;
@@ -12,6 +12,17 @@ const SidebarContext = createContext<SidebarContextType | null>(null);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
 	const [collapsed, setCollapsed] = useState(false);
+
+	useEffect(() => {
+		const checkScreenWidth = () => {
+			if (window.innerWidth <= 768) {
+				// treat ≤768px as mobile
+				setCollapsed(true); // or true, depending on your UX
+			}
+		};
+
+		checkScreenWidth();
+	}, []);
 
 	return (
 		<SidebarContext.Provider

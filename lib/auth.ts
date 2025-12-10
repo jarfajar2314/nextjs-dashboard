@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "@/lib/prisma";
+import { nextCookies } from "better-auth/next-js";
 
 // ---- BETTER AUTH CONFIG ----
 export const auth = betterAuth({
@@ -19,5 +20,5 @@ export const auth = betterAuth({
 	trustedOrigins: ["http://localhost:3002"],
 
 	// Required for Next.js App Router cookie handling
-	// plugins: [nextCookies()],
+	plugins: [nextCookies()],
 });

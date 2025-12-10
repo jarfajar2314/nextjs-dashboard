@@ -90,9 +90,9 @@ export default function DashboardPage() {
 						week.
 					</p>
 				</div>
-				<div className="flex gap-3">
+				<div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row">
 					<Select defaultValue="7d">
-						<SelectTrigger className="w-32">
+						<SelectTrigger className="w-full sm:w-32">
 							<SelectValue placeholder="Range" />
 						</SelectTrigger>
 						<SelectContent>
@@ -101,8 +101,10 @@ export default function DashboardPage() {
 							<SelectItem value="90d">Last 90 days</SelectItem>
 						</SelectContent>
 					</Select>
-					<Button variant="outline">Download report</Button>
-					<Button>Share snapshot</Button>
+					<Button variant="outline" className="w-full sm:w-auto">
+						Download report
+					</Button>
+					<Button className="w-full sm:w-auto">Share snapshot</Button>
 				</div>
 			</header>
 
@@ -227,27 +229,33 @@ export default function DashboardPage() {
 
 			<section className="grid gap-6 lg:grid-cols-3">
 				<Card className="lg:col-span-2">
-					<CardHeader className="flex flex-row items-center justify-between">
+					<CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 						<div>
 							<CardTitle>Open deals</CardTitle>
 							<CardDescription>
 								Deals in commit for the next 30 days.
 							</CardDescription>
 						</div>
-						<Button variant="outline">View pipeline</Button>
+						<Button variant="outline" className="w-full sm:w-auto">
+							View pipeline
+						</Button>
 					</CardHeader>
+
 					<CardContent className="px-0">
-						<div className="px-6 pb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground grid grid-cols-[2fr_1fr_1fr_1fr]">
-							<span>Company</span>
-							<span>Owner</span>
-							<span>Value</span>
-							<span>Stage</span>
+						<div className="px-6">
+							<div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 border-b pb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+								<span>Company</span>
+								<span>Owner</span>
+								<span>Value</span>
+								<span>Stage</span>
+							</div>
 						</div>
-						<div className="divide-y">
+
+						<ul className="divide-y">
 							{PIPELINE.map((deal) => (
-								<div
+								<li
 									key={deal.company}
-									className="grid grid-cols-[2fr_1fr_1fr_1fr] items-center gap-4 px-6 py-4"
+									className="px-6 py-4 grid items-center gap-4 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]"
 								>
 									<span className="font-medium">
 										{deal.company}
@@ -261,9 +269,9 @@ export default function DashboardPage() {
 									<span className="text-sm text-muted-foreground">
 										{deal.stage}
 									</span>
-								</div>
+								</li>
 							))}
-						</div>
+						</ul>
 					</CardContent>
 				</Card>
 

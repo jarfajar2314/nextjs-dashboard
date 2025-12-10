@@ -22,10 +22,14 @@ export default function LoginPage() {
 		setLoading(true);
 		setError(null);
 
+		console.log("signin in");
+
 		const res = await authClient.signIn.email({
 			email,
 			password,
 		});
+
+		console.log("res", res);
 
 		if (res.error) {
 			const msg = res.error.message || "Sign In failed.";
@@ -34,8 +38,11 @@ export default function LoginPage() {
 			return;
 		}
 
+		console.log("no error");
+
 		// Success → redirect to dashboard
 		router.push("/dashboard");
+		console.log("doesn't redirect");
 	};
 
 	return (
