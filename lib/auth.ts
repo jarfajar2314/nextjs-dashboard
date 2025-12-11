@@ -2,7 +2,8 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "@/lib/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
+import { admin as adminPlugin } from "better-auth/plugins";
+import { ac, admin, superadmin, user } from "@/lib/permissions";
 
 // ---- BETTER AUTH CONFIG ----
 export const auth = betterAuth({
@@ -33,5 +34,17 @@ export const auth = betterAuth({
 	],
 
 	// Required for Next.js App Router cookie handling
-	plugins: [nextCookies(), admin()],
+	plugins: [
+		nextCookies(),
+		adminPlugin({
+			ac,
+			roles: {
+				user,
+				admin,
+				superadmin,
+			},
+			adminRoles: ["admin", "superadmin"],
+			defaultRole: "user",
+		}),
+	],
 });
