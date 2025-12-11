@@ -20,11 +20,20 @@ import { usePathname } from "next/navigation";
 
 const menu = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ name: "Users", href: "/users", icon: User },
-
-	// ---------------------------
-	// Settings (with children)
-	// ---------------------------
+	{
+		name: "Admin",
+		href: "/admin",
+		icon: ShieldCheck,
+		children: [
+			{ name: "Users", href: "/users", icon: User },
+			{ name: "Roles", href: "/admin/roles", icon: UserCircle },
+			{
+				name: "Permissions",
+				href: "/admin/permissions",
+				icon: ShieldCheck,
+			},
+		],
+	},
 	{
 		name: "Settings",
 		href: "/settings",
