@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,14 +23,10 @@ export default function LoginPage() {
 		setLoading(true);
 		setError(null);
 
-		console.log("signin in");
-
 		const res = await authClient.signIn.email({
 			email,
 			password,
 		});
-
-		console.log("res", res);
 
 		if (res.error) {
 			const msg = res.error.message || "Sign In failed.";
@@ -37,8 +34,6 @@ export default function LoginPage() {
 			setLoading(false);
 			return;
 		}
-
-		console.log("no error");
 
 		// Success → redirect to dashboard
 		router.push("/dashboard");
@@ -68,8 +63,7 @@ export default function LoginPage() {
 
 					<div className="space-y-1">
 						<Label>Password</Label>
-						<Input
-							type="password"
+						<PasswordInput
 							placeholder="••••••••"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}

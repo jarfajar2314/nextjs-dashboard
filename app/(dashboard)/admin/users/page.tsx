@@ -21,38 +21,22 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { PasswordInput } from "@/components/ui/password-input";
 import {
 	Ban,
 	Edit,
 	MoreHorizontal,
 	Trash2,
 	ShieldOff,
-	Search,
 	Loader2,
 	Shield,
 	Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { UserEditDialog } from "@/components/admin/user-edit-dialog";
+import { UserCreateDialog } from "@/components/admin/user-create-dialog";
 
 // Basic types
 interface Role {
@@ -80,19 +64,10 @@ export default function UsersPage() {
 
 	// Edit User Dialog
 	const [editingUser, setEditingUser] = useState<User | null>(null);
-	const [editName, setEditName] = useState("");
 	const [isEditOpen, setIsEditOpen] = useState(false);
-	const [saving, setSaving] = useState(false);
 
 	// Create User Dialog
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
-	const [creating, setCreating] = useState(false);
-	const [createForm, setCreateForm] = useState({
-		name: "",
-		email: "",
-		password: "",
-		role: "user",
-	});
 
 	useEffect(() => {
 		fetchUsers();
@@ -184,67 +159,7 @@ export default function UsersPage() {
 
 	const openEdit = (user: User) => {
 		setEditingUser(user);
-		setEditName(user.name);
 		setIsEditOpen(true);
-	};
-
-	const handleSaveEdit = async () => {
-		if (!editingUser) return;
-		setSaving(true);
-		try {
-			const res = await fetch(`/api/admin/users/${editingUser.id}`, {
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name: editName }),
-			});
-
-			if (res.ok) {
-				toast.success("User updated");
-				setIsEditOpen(false);
-				fetchUsers();
-			} else {
-				toast.error("Update failed");
-			}
-		} catch (err) {
-			toast.error("Error updating user");
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const handleCreateUser = async () => {
-		if (!createForm.email || !createForm.password || !createForm.name) {
-			toast.error("Please fill in all fields");
-			return;
-		}
-
-		setCreating(true);
-		try {
-			const { data, error } = await authClient.admin.createUser({
-				email: createForm.email,
-				password: createForm.password,
-				name: createForm.name,
-				role: createForm.role,
-			});
-
-			if (error) {
-				toast.error(error.message || "Failed to create user");
-			} else {
-				toast.success("User created successfully");
-				setIsCreateOpen(false);
-				setCreateForm({
-					name: "",
-					email: "",
-					password: "",
-					role: "user",
-				});
-				fetchUsers();
-			}
-		} catch (err: any) {
-			toast.error(err.message || "Error creating user");
-		} finally {
-			setCreating(false);
-		}
 	};
 
 	return (
@@ -446,116 +361,19 @@ export default function UsersPage() {
 
 			{/* Pagination Controls could go here */}
 
-			{/* Edit User Dialog */}
-			<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Edit User</DialogTitle>
-						<DialogDescription>
-							Change user display name
-						</DialogDescription>
-					</DialogHeader>
-					<div className="py-2">
-						<Label>Name</Label>
-						<Input
-							value={editName}
-							onChange={(e) => setEditName(e.target.value)}
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsEditOpen(false)}
-						>
-							Cancel
-						</Button>
-						<Button onClick={handleSaveEdit} disabled={saving}>
-							{saving ? "Saving..." : "Save Changes"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-			{/* Create User Dialog */}
-			<Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Create New User</DialogTitle>
-						<DialogDescription>
-							Add a new user to the system.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-2">
-						<div className="space-y-2">
-							<Label>Name</Label>
-							<Input
-								placeholder="John Doe"
-								value={createForm.name}
-								onChange={(e) =>
-									setCreateForm({
-										...createForm,
-										name: e.target.value,
-									})
-								}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Email</Label>
-							<Input
-								type="email"
-								placeholder="john@example.com"
-								value={createForm.email}
-								onChange={(e) =>
-									setCreateForm({
-										...createForm,
-										email: e.target.value,
-									})
-								}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Password</Label>
-							<PasswordInput
-								placeholder="Secure password"
-								value={createForm.password}
-								onChange={(e) =>
-									setCreateForm({
-										...createForm,
-										password: e.target.value,
-									})
-								}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label>Role</Label>
-							<Select
-								value={createForm.role}
-								onValueChange={(val) =>
-									setCreateForm({ ...createForm, role: val })
-								}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select role" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="user">User</SelectItem>
-									<SelectItem value="admin">Admin</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => setIsCreateOpen(false)}
-						>
-							Cancel
-						</Button>
-						<Button onClick={handleCreateUser} disabled={creating}>
-							{creating ? "Creating..." : "Create User"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{/* Dialogs */}
+			<UserEditDialog
+				user={editingUser}
+				open={isEditOpen}
+				onOpenChange={setIsEditOpen}
+				onSuccess={fetchUsers}
+			/>
+
+			<UserCreateDialog
+				open={isCreateOpen}
+				onOpenChange={setIsCreateOpen}
+				onSuccess={fetchUsers}
+			/>
 		</div>
 	);
 }
