@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 export function useRequirePermission(
 	action: string | string[],
-	resource: string
+	resource: string,
+	options: { redirect?: boolean } = { redirect: true }
 ) {
 	const { data: session, isPending, error } = authClient.useSession();
 	const router = useRouter();
@@ -12,6 +13,7 @@ export function useRequirePermission(
 
 	// Memoize action array key to prevent effect loops
 	const actionKey = Array.isArray(action) ? action.join(",") : action;
+	const shouldRedirect = options.redirect ?? true;
 
 	useEffect(() => {
 		if (isPending) return;
@@ -44,12 +46,14 @@ export function useRequirePermission(
 		}
 
 		if (!hasPermission) {
-			router.push("/forbidden");
+			if (shouldRedirect) {
+				router.push("/forbidden");
+			}
 			setIsAuthorized(false);
 		} else {
 			setIsAuthorized(true);
 		}
-	}, [session, isPending, router, actionKey, resource]); // Use actionKey dependency
+	}, [session, isPending, router, actionKey, resource, shouldRedirect]); // Use actionKey dependency
 
 	return { isAuthorized, isLoading: isPending || isAuthorized === null };
 }

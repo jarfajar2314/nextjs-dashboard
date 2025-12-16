@@ -37,6 +37,12 @@ export default function PermissionsPage() {
 		"permissions"
 	);
 
+	const { isAuthorized: canManage } = useRequirePermission(
+		"manage",
+		"permissions",
+		{ redirect: false }
+	);
+
 	const [permissions, setPermissions] = useState<Permission[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(false);
@@ -168,10 +174,12 @@ export default function PermissionsPage() {
 						View and manage available system permissions.
 					</p>
 				</div>
-				<Button onClick={handleCreate}>
-					<Plus className="mr-2 size-4" />
-					Add Permission
-				</Button>
+				{canManage && (
+					<Button onClick={handleCreate}>
+						<Plus className="mr-2 size-4" />
+						Add Permission
+					</Button>
+				)}
 			</header>
 
 			<div className="rounded-md border">
@@ -181,9 +189,11 @@ export default function PermissionsPage() {
 							<TableHead>Resource</TableHead>
 							<TableHead>Action</TableHead>
 							<TableHead>Description</TableHead>
-							<TableHead className="text-right">
-								Actions
-							</TableHead>
+							{canManage && (
+								<TableHead className="text-right">
+									Actions
+								</TableHead>
+							)}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -198,33 +208,35 @@ export default function PermissionsPage() {
 								<TableCell className="text-muted-foreground">
 									{perm.description}
 								</TableCell>
-								<TableCell className="text-right">
-									<div className="flex justify-end gap-2">
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											onClick={() => handleEdit(perm)}
-										>
-											<Edit className="size-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon-sm"
-											className="text-destructive hover:text-destructive"
-											onClick={() =>
-												handleDelete(perm.id)
-											}
-										>
-											<Trash2 className="size-4" />
-										</Button>
-									</div>
-								</TableCell>
+								{canManage && (
+									<TableCell className="text-right">
+										<div className="flex justify-end gap-2">
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												onClick={() => handleEdit(perm)}
+											>
+												<Edit className="size-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												className="text-destructive hover:text-destructive"
+												onClick={() =>
+													handleDelete(perm.id)
+												}
+											>
+												<Trash2 className="size-4" />
+											</Button>
+										</div>
+									</TableCell>
+								)}
 							</TableRow>
 						))}
 						{!loading && permissions.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={4}
+									colSpan={canManage ? 4 : 3}
 									className="h-24 text-center"
 								>
 									No permissions found.

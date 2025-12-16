@@ -63,6 +63,13 @@ export default function UsersPage() {
 		"users"
 	);
 
+	// Authorization - manage:users (for actions)
+	const { isAuthorized: canManage } = useRequirePermission(
+		"manage",
+		"users",
+		{ redirect: false }
+	);
+
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [search, setSearch] = useState("");
@@ -194,17 +201,19 @@ export default function UsersPage() {
 				</div>
 
 				<div className="flex gap-2">
-					<Button variant="outline" className="gap-2">
+					{/* <Button variant="outline" className="gap-2">
 						<Shield className="size-4" />
 						Access policies
-					</Button>
-					<Button
-						className="gap-2"
-						onClick={() => setIsCreateOpen(true)}
-					>
-						<Plus className="size-4" />
-						Create User
-					</Button>
+					</Button> */}
+					{canManage && (
+						<Button
+							className="gap-2"
+							onClick={() => setIsCreateOpen(true)}
+						>
+							<Plus className="size-4" />
+							Create User
+						</Button>
+					)}
 				</div>
 			</header>
 
@@ -229,9 +238,11 @@ export default function UsersPage() {
 							<TableHead>Roles</TableHead>
 							<TableHead>Status</TableHead>
 							<TableHead>Created</TableHead>
-							<TableHead className="text-right">
-								Actions
-							</TableHead>
+							{canManage && (
+								<TableHead className="text-right">
+									Actions
+								</TableHead>
+							)}
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -292,84 +303,90 @@ export default function UsersPage() {
 										"MMM d, yyyy"
 									)}
 								</TableCell>
-								<TableCell className="text-right">
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon-sm"
-											>
-												<MoreHorizontal className="size-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuLabel>
-												Actions
-											</DropdownMenuLabel>
-											<DropdownMenuItem
-												onClick={() => openEdit(user)}
-											>
-												<Edit className="mr-2 size-4" />{" "}
-												Edit Details
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<div className="">
-												<UserRoleManager
-													userId={user.id}
-													currentRoles={user.roles.map(
-														(r) => r.name
-													)}
-													onUpdate={fetchUsers}
-												/>
-											</div>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onClick={() =>
-													handleRevokeSessions(
-														user.id
-													)
-												}
-											>
-												<ShieldOff className="mr-2 size-4 text-orange-500" />{" "}
-												Revoke Access
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() =>
-													handleBanUser(
-														user.id,
+								{canManage && (
+									<TableCell className="text-right">
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon-sm"
+												>
+													<MoreHorizontal className="size-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuLabel>
+													Actions
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													onClick={() =>
+														openEdit(user)
+													}
+												>
+													<Edit className="mr-2 size-4" />{" "}
+													Edit Details
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<div className="">
+													<UserRoleManager
+														userId={user.id}
+														currentRoles={user.roles.map(
+															(r) => r.name
+														)}
+														onUpdate={fetchUsers}
+													/>
+												</div>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onClick={() =>
+														handleRevokeSessions(
+															user.id
+														)
+													}
+												>
+													<ShieldOff className="mr-2 size-4 text-orange-500" />{" "}
+													Revoke Access
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() =>
+														handleBanUser(
+															user.id,
+															user.banned
+														)
+													}
+													className={
 														user.banned
-													)
-												}
-												className={
-													user.banned
-														? "text-green-600"
-														: "text-destructive"
-												}
-											>
-												<Ban className="mr-2 size-4" />{" "}
-												{user.banned
-													? "Unban User"
-													: "Ban User"}
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onClick={() =>
-													handleDeleteUser(user.id)
-												}
-												className="text-destructive focus:text-destructive"
-											>
-												<Trash2 className="mr-2 size-4" />
-												Delete User
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</TableCell>
+															? "text-green-600"
+															: "text-destructive"
+													}
+												>
+													<Ban className="mr-2 size-4" />{" "}
+													{user.banned
+														? "Unban User"
+														: "Ban User"}
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onClick={() =>
+														handleDeleteUser(
+															user.id
+														)
+													}
+													className="text-destructive focus:text-destructive"
+												>
+													<Trash2 className="mr-2 size-4" />
+													Delete User
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</TableCell>
+								)}
 							</TableRow>
 						))}
 						{!loading && users.length === 0 && (
 							<TableRow>
 								<TableCell
-									colSpan={5}
+									colSpan={canManage ? 5 : 4}
 									className="h-24 text-center"
 								>
 									No users found.

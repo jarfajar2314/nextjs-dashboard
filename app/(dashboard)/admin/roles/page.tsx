@@ -37,6 +37,12 @@ export default function RolesPage() {
 		"roles"
 	);
 
+	const { isAuthorized: canManage } = useRequirePermission(
+		"manage",
+		"roles",
+		{ redirect: false }
+	);
+
 	const [roles, setRoles] = useState<Role[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [isFormOpen, setIsFormOpen] = useState(false);
@@ -111,10 +117,12 @@ export default function RolesPage() {
 						Manage system roles and their permissions.
 					</p>
 				</div>
-				<Button onClick={handleCreate}>
-					<Plus className="mr-2 size-4" />
-					Create Role
-				</Button>
+				{canManage && (
+					<Button onClick={handleCreate}>
+						<Plus className="mr-2 size-4" />
+						Create Role
+					</Button>
+				)}
 			</header>
 
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -136,23 +144,25 @@ export default function RolesPage() {
 							<p className="mt-2 text-sm text-muted-foreground line-clamp-2 min-h-10">
 								{role.description || "No description provided."}
 							</p>
-							<div className="mt-4 flex justify-end gap-2">
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									onClick={() => handleEdit(role)}
-								>
-									<Edit className="size-4" />
-								</Button>
-								<Button
-									variant="ghost"
-									size="icon-sm"
-									className="text-destructive hover:text-destructive"
-									onClick={() => handleDelete(role.id)}
-								>
-									<Trash2 className="size-4" />
-								</Button>
-							</div>
+							{canManage && (
+								<div className="mt-4 flex justify-end gap-2">
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										onClick={() => handleEdit(role)}
+									>
+										<Edit className="size-4" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon-sm"
+										className="text-destructive hover:text-destructive"
+										onClick={() => handleDelete(role.id)}
+									>
+										<Trash2 className="size-4" />
+									</Button>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				))}
