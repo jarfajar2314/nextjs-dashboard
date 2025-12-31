@@ -79,28 +79,10 @@ const rawMenu: MenuItem[] = [
 				permissions: [{ resource: "workflows", action: "read" }],
 			},
 			{
-				name: "Definitions",
-				href: "/workflow/definitions",
+				name: "Manage Workflow",
+				href: "/workflow/manage",
 				icon: User,
 				permissions: [{ resource: "workflows", action: "read" }],
-				children: [
-					{
-						name: "Workflows",
-						href: "/workflow/definitions/workflows",
-						icon: RocketIcon,
-						permissions: [
-							{ resource: "workflows", action: "read" },
-						],
-					},
-					{
-						name: "Versions",
-						href: "/workflow/definitions/versions",
-						icon: Clipboard,
-						permissions: [
-							{ resource: "workflows", action: "read" },
-						],
-					},
-				],
 			},
 			{
 				name: "Monitoring",

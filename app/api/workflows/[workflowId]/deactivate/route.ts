@@ -26,28 +26,19 @@ export async function POST(
 			return new NextResponse("Workflow not found", { status: 404 });
 		}
 
-		return prisma.$transaction(async (tx) => {
-			// 1️⃣ Deactivate all versions of this workflow code
-			await tx.workflow.updateMany({
-				where: { code: targetWorkflow.code },
-				data: { is_active: false },
-			});
+		const updated = await prisma.workflow.update({
+			where: { id: workflowId },
+			data: { is_active: false },
+		});
 
-			// 2️⃣ Activate the specific target workflow
-			const updated = await tx.workflow.update({
-				where: { id: workflowId },
-				data: { is_active: true },
-			});
-
-			return NextResponse.json({
-				id: updated.id,
-				code: updated.code,
-				version: updated.version,
-				status: "ACTIVATED",
-			});
+		return NextResponse.json({
+			id: updated.id,
+			code: updated.code,
+			version: updated.version,
+			status: "DEACTIVATED",
 		});
 	} catch (error) {
-		console.error("Error activating workflow:", error);
+		console.error("Error deactivating workflow:", error);
 		return new NextResponse("Internal Server Error", { status: 500 });
 	}
 }

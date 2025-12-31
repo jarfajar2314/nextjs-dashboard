@@ -139,7 +139,7 @@ export default function NewStepPage() {
 			}
 
 			toast.success("Step created successfully");
-			router.push(`/workflow/definitions/workflows/${workflowId}`);
+			router.push(`/workflow/manage/workflows/${workflowId}`);
 		} catch (error) {
 			console.error(error);
 			toast.error("Failed to create step. Please check your inputs.");
@@ -156,9 +156,7 @@ export default function NewStepPage() {
 					className="pl-0 hover:pl-2 transition-all"
 					asChild
 				>
-					<Link
-						href={`/workflow/definitions/workflows/${workflowId}`}
-					>
+					<Link href={`/workflow/manage/workflows/${workflowId}`}>
 						<ArrowLeft className="mr-2 h-4 w-4" />
 						Back to Workflow
 					</Link>
