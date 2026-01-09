@@ -12,43 +12,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-
-const mockRequests: RequestItem[] = [
-	{
-		id: "1",
-		title: "Vacation Request - Dec 2024",
-		status: "PENDING",
-		currentStep: "Manager Approval",
-		createdAt: "2024-12-01T09:00:00Z",
-		updatedAt: "2024-12-02T10:00:00Z",
-	},
-	{
-		id: "2",
-		title: "New Laptop Request",
-		status: "APPROVED",
-		currentStep: "Completed",
-		createdAt: "2023-11-15T14:30:00Z",
-		updatedAt: "2023-11-20T11:00:00Z",
-	},
-	{
-		id: "3",
-		title: "Project Budget Approval",
-		status: "REJECTED",
-		currentStep: "Finance Review",
-		createdAt: "2023-10-05T08:45:00Z",
-		updatedAt: "2023-10-06T16:20:00Z",
-	},
-	{
-		id: "4",
-		title: "Conference Travel Request",
-		status: "PENDING",
-		currentStep: "Director Approval",
-		createdAt: "2024-01-08T11:00:00Z",
-		updatedAt: "2024-01-08T11:00:00Z",
-	},
-];
+import { useEffect, useState } from "react";
 
 export default function RequestsPage() {
+	const [requests, setRequests] = useState<RequestItem[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		async function fetchRequests() {
+			try {
+				const res = await fetch("/api/workflow-instances");
+				if (!res.ok) {
+					console.error("Failed to fetch requests");
+					return;
+				}
+				const data = await res.json();
+				setRequests(data);
+			} catch (error) {
+				console.error("Error loading requests:", error);
+			} finally {
+				setLoading(false);
+			}
+		}
+
+		fetchRequests();
+	}, []);
+
 	return (
 		<div className="space-y-8">
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -74,11 +63,17 @@ export default function RequestsPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<DataTable
-						columns={columns}
-						data={mockRequests}
-						filterKey="title"
-					/>
+					{loading ? (
+						<div className="flex justify-center p-8 text-muted-foreground">
+							Loading requests...
+						</div>
+					) : (
+						<DataTable
+							columns={columns}
+							data={requests}
+							filterKey="title"
+						/>
+					)}
 				</CardContent>
 			</Card>
 		</div>

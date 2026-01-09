@@ -99,12 +99,30 @@ npm run build
 npm start
 ```
 
-### With Docker
+### 🐳 Deployment with Docker
 
-```bash
-docker build -t nextjs-dashboard .
-docker run -p 3000:3000 nextjs-dashboard
-```
+Reliably deploy the application using Docker Compose.
+
+1.  **Configure Environment**:
+    Open `docker-compose.yml` and populate the environment variables.
+
+    ```yaml
+    environment:
+        DATABASE_URL: "postgresql://..."
+        BETTER_AUTH_SECRET: "your_secret..."
+        # ...
+    ```
+
+    > **Tip**: For multi-tenant Microsoft Authentication, set `MICROSOFT_TENANT_ID` to `"common"`. This allows users from any Azure AD tenant to sign in.
+
+2.  **Build and Start**:
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+3.  **Access**:
+    The dashboard will be running on `http://localhost:3002`.
 
 ## 📁 Project Structure
 
@@ -128,4 +146,3 @@ nextjs-dashboard/
 2. Create new feature branch
 3. Commit changes
 4. Create Pull Request
-

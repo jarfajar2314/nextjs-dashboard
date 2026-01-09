@@ -102,6 +102,30 @@ export default function HelpPage() {
 					</CardContent>
 				</Card>
 
+				{/* Project Proposal Section */}
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<BookOpen className="h-5 w-5" /> Project Proposals
+						</CardTitle>
+						<CardDescription>
+							Workflow Demonstration
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-2 text-sm text-muted-foreground">
+						<p>
+							<strong>Proposals:</strong> Create and manage
+							project proposals to request budget and approval.
+						</p>
+						<p>
+							<strong>Demo Purpose:</strong> This feature serves
+							as a live demonstration of the workflow engine,
+							showcasing how requests move through approval states
+							(Draft, Pending, Approved, etc.).
+						</p>
+					</CardContent>
+				</Card>
+
 				{/* Settings Section */}
 				<Card>
 					<CardHeader>

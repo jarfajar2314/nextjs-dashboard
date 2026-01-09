@@ -2,20 +2,13 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { hasPermission } from "@/lib/rbac";
 
-export async function GET(
-	req: Request,
-	props: { params: Promise<{ instanceId: string }> }
-) {
-	const params = await props.params;
+export async function GET(req: Request) {
 	const canRead = await hasPermission("read", "workflow_history");
 	if (!canRead) {
 		return new NextResponse("Forbidden", { status: 403 });
 	}
 
 	const history = await prisma.workflow_action_log.findMany({
-		where: {
-			workflow_instance_id: params.instanceId,
-		},
 		include: {
 			workflow_instance: {
 				include: {
@@ -26,6 +19,7 @@ export async function GET(
 		orderBy: {
 			created_at: "desc",
 		},
+		take: 100, // Limit to 100 for now to prevent overload
 	});
 
 	const actorIds = Array.from(new Set(history.map((h) => h.actor_id)));

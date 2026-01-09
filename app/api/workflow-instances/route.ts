@@ -4,6 +4,66 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { resolveApprovers } from "@/lib/workflow/resolver";
 
+export async function GET(req: Request) {
+	const session = await auth.api.getSession({
+		headers: await headers(),
+	});
+
+	if (!session?.user?.id) {
+		return new NextResponse("Unauthorized", { status: 401 });
+	}
+
+	const url = new URL(req.url);
+	const view = url.searchParams.get("view");
+
+	const where: any = {};
+	if (view !== "all") {
+		where.created_by = session.user.id;
+	}
+
+	const instances = await prisma.workflow_instance.findMany({
+		where,
+		include: {
+			workflow: true,
+			workflow_step: true,
+		},
+		orderBy: {
+			created_at: "desc",
+		},
+	});
+
+	const userIds = Array.from(new Set(instances.map((i) => i.created_by)));
+	const users = await prisma.user.findMany({
+		where: {
+			id: {
+				in: userIds,
+			},
+		},
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			image: true,
+		},
+	});
+
+	const userMap = new Map(users.map((u) => [u.id, u]));
+
+	const formattedInstances = instances.map((instance) => ({
+		id: instance.id,
+		title: instance.workflow.name,
+		status: instance.status === "IN_PROGRESS" ? "PENDING" : instance.status,
+		currentStep: instance.workflow_step?.name || "Completed",
+		createdAt: instance.created_at.toISOString(),
+		updatedAt: instance.created_at.toISOString(),
+		refType: instance.ref_type,
+		refId: instance.ref_id,
+		createdBy: userMap.get(instance.created_by),
+	}));
+
+	return NextResponse.json(formattedInstances);
+}
+
 export async function POST(req: Request) {
 	// 1️⃣ Get current user
 	const session = await auth.api.getSession({

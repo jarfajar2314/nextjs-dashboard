@@ -83,10 +83,11 @@ export async function POST(req: Request) {
 			(s) => s.id === stepInstance.step_id
 		);
 
+		const currentStep = steps[currentIndex];
 		const nextStep = steps[currentIndex + 1];
 
 		// 8️⃣ If no next step or terminal → complete workflow
-		if (!nextStep || nextStep.is_terminal) {
+		if (!nextStep || currentStep.is_terminal) {
 			await tx.workflow_instance.update({
 				where: { id: stepInstance.workflow_instance_id },
 				data: {
@@ -119,7 +120,7 @@ export async function POST(req: Request) {
 				workflow_instance_id: stepInstance.workflow_instance_id,
 				step_id: nextStep.id,
 				status: "PENDING",
-				assigned_to: assignedUsers,
+				assigned_to: [...assignedUsers],
 			},
 		});
 

@@ -60,6 +60,8 @@ export async function POST(req: Request) {
 			orderBy: { step_order: "asc" },
 		});
 
+		console.log("Steps", steps);
+
 		const currentIndex = steps.findIndex(
 			(s) => s.id === stepInstance.step_id
 		);
@@ -73,6 +75,8 @@ export async function POST(req: Request) {
 			steps,
 			currentIndex
 		);
+
+		console.log("Target step", targetStep);
 
 		if (!targetStep) {
 			throw new Error("Invalid send-back target");

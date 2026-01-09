@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/datatable/data-table-column-header"; // Assuming this exists based on file search
 import { toast } from "sonner";
+import { formatIDR } from "@/lib/utils";
 
 export type Proposal = {
 	id: string;
@@ -48,13 +49,10 @@ export const columns = (
 			<DataTableColumnHeader column={column} title="Budget" />
 		),
 		cell: ({ row }) => {
-			const amount = parseFloat(row.getValue("budget") || "0");
-			const formatted = new Intl.NumberFormat("en-US", {
-				style: "currency",
-				currency: "USD",
-			}).format(amount);
 			return (
-				<div className="font-medium">{amount ? formatted : "-"}</div>
+				<div className="font-medium">
+					{formatIDR(row.getValue("budget"))}
+				</div>
 			);
 		},
 	},

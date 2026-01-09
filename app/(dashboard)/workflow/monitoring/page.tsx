@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DataTable } from "@/components/datatable/data-table";
 import { MonitorItem, columns } from "./columns";
 import {
@@ -9,57 +10,39 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Activity, CheckCircle2, Clock, XCircle } from "lucide-react";
-
-const mockMonitorData: MonitorItem[] = [
-	{
-		id: "1",
-		title: "Vacation Request - Dec 2024",
-		status: "PENDING",
-		currentStep: "Manager Approval",
-		submittedBy: "John Doe",
-		createdAt: "2024-12-01T09:00:00Z",
-		updatedAt: "2024-12-02T10:00:00Z",
-	},
-	{
-		id: "2",
-		title: "New Laptop Request",
-		status: "APPROVED",
-		currentStep: "Completed",
-		submittedBy: "Jane Smith",
-		createdAt: "2023-11-15T14:30:00Z",
-		updatedAt: "2023-11-20T11:00:00Z",
-	},
-	{
-		id: "3",
-		title: "Project Budget Approval",
-		status: "REJECTED",
-		currentStep: "Finance Review",
-		submittedBy: "Mike Jones",
-		createdAt: "2023-10-05T08:45:00Z",
-		updatedAt: "2023-10-06T16:20:00Z",
-	},
-	{
-		id: "4",
-		title: "Conference Travel Request",
-		status: "PENDING",
-		currentStep: "Director Approval",
-		submittedBy: "Alice Williams",
-		createdAt: "2024-01-08T11:00:00Z",
-		updatedAt: "2024-01-08T11:00:00Z",
-	},
-	{
-		id: "5",
-		title: "Server Access Request",
-		status: "PENDING",
-		currentStep: "IT Security Review",
-		submittedBy: "Bob Developer",
-		createdAt: "2024-01-09T09:30:00Z",
-		updatedAt: "2024-01-09T09:30:00Z",
-	},
-];
+import { Activity, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function MonitoringPage() {
+	const [data, setData] = useState<MonitorItem[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	const fetchData = async () => {
+		try {
+			const res = await fetch("/api/workflow-instances?view=all");
+			if (!res.ok) throw new Error("Failed to fetch data");
+			const json = await res.json();
+			setData(json);
+		} catch (error) {
+			console.error(error);
+			toast.error("Failed to load workflow instances");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchData();
+	}, []);
+
+	if (loading) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin" />
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-8">
 			<div>
@@ -79,9 +62,7 @@ export default function MonitoringPage() {
 						<Activity className="h-4 w-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">
-							{mockMonitorData.length}
-						</div>
+						<div className="text-2xl font-bold">{data.length}</div>
 						<p className="text-xs text-muted-foreground">
 							All time
 						</p>
@@ -96,11 +77,7 @@ export default function MonitoringPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
-							{
-								mockMonitorData.filter(
-									(i) => i.status === "PENDING"
-								).length
-							}
+							{data.filter((i) => i.status === "PENDING").length}
 						</div>
 						<p className="text-xs text-muted-foreground">
 							Currently active
@@ -116,11 +93,7 @@ export default function MonitoringPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
-							{
-								mockMonitorData.filter(
-									(i) => i.status === "APPROVED"
-								).length
-							}
+							{data.filter((i) => i.status === "APPROVED").length}
 						</div>
 						<p className="text-xs text-muted-foreground">
 							Successfully completed
@@ -136,11 +109,7 @@ export default function MonitoringPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold">
-							{
-								mockMonitorData.filter(
-									(i) => i.status === "REJECTED"
-								).length
-							}
+							{data.filter((i) => i.status === "REJECTED").length}
 						</div>
 						<p className="text-xs text-muted-foreground">
 							Denied requests
@@ -159,7 +128,7 @@ export default function MonitoringPage() {
 				<CardContent>
 					<DataTable
 						columns={columns}
-						data={mockMonitorData}
+						data={data}
 						filterKey="title"
 					/>
 				</CardContent>

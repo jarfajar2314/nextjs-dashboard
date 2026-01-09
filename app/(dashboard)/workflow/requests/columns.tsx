@@ -13,6 +13,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/datatable/data-table-column-header";
+import { useViewDetails } from "@/hooks/use-view-details";
 
 export type RequestItem = {
 	id: string;
@@ -21,6 +22,42 @@ export type RequestItem = {
 	currentStep: string;
 	createdAt: string;
 	updatedAt: string;
+	refType: string;
+	refId: string;
+};
+
+const ActionCell = ({ item }: { item: RequestItem }) => {
+	const { handleViewDetails } = useViewDetails();
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" className="h-8 w-8 p-0">
+					<span className="sr-only">Open menu</span>
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end">
+				<DropdownMenuLabel>Actions</DropdownMenuLabel>
+				<DropdownMenuItem
+					onClick={() => navigator.clipboard.writeText(item.id)}
+				>
+					Copy ID
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					onClick={() => handleViewDetails(item.refType, item.refId)}
+				>
+					View details
+				</DropdownMenuItem>
+				{item.status === "PENDING" && (
+					<DropdownMenuItem className="text-red-600">
+						Cancel Request
+					</DropdownMenuItem>
+				)}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 };
 
 export const columns: ColumnDef<RequestItem>[] = [
@@ -92,36 +129,6 @@ export const columns: ColumnDef<RequestItem>[] = [
 	},
 	{
 		id: "actions",
-		cell: ({ row }) => {
-			const request = row.original;
-
-			return (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<span className="sr-only">Open menu</span>
-							<MoreHorizontal className="h-4 w-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end">
-						<DropdownMenuLabel>Actions</DropdownMenuLabel>
-						<DropdownMenuItem
-							onClick={() =>
-								navigator.clipboard.writeText(request.id)
-							}
-						>
-							Copy ID
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem>View details</DropdownMenuItem>
-						{request.status === "PENDING" && (
-							<DropdownMenuItem className="text-red-600">
-								Cancel Request
-							</DropdownMenuItem>
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
-			);
-		},
+		cell: ({ row }) => <ActionCell item={row.original} />,
 	},
 ];

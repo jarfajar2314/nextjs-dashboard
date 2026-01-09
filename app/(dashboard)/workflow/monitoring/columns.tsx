@@ -19,7 +19,11 @@ export type MonitorItem = {
 	title: string;
 	status: "PENDING" | "APPROVED" | "REJECTED";
 	currentStep: string;
-	submittedBy: string;
+	createdBy?: {
+		name: string | null;
+		email: string | null;
+		image: string | null;
+	};
 	createdAt: string;
 	updatedAt: string;
 };
@@ -32,10 +36,23 @@ export const columns: ColumnDef<MonitorItem>[] = [
 		),
 	},
 	{
-		accessorKey: "submittedBy",
+		accessorKey: "createdBy",
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Submitted By" />
 		),
+		cell: ({ row }) => {
+			const user = row.original.createdBy;
+			return (
+				<div className="flex flex-col">
+					<span className="font-medium text-sm">
+						{user?.name || "Unknown"}
+					</span>
+					<span className="text-xs text-muted-foreground">
+						{user?.email}
+					</span>
+				</div>
+			);
+		},
 	},
 	{
 		accessorKey: "currentStep",

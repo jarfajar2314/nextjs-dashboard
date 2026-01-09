@@ -17,11 +17,10 @@ import { DataTableColumnHeader } from "@/components/datatable/data-table-column-
 export type AuditLogItem = {
 	id: string;
 	workflowTitle: string;
-	action: "CREATED" | "APPROVED" | "REJECTED" | "UPDATED" | "DELETED";
+	action: string;
 	performedBy: string;
 	details: string;
 	timestamp: string;
-	ipAddress: string;
 };
 
 export const columns: ColumnDef<AuditLogItem>[] = [
@@ -49,6 +48,8 @@ export const columns: ColumnDef<AuditLogItem>[] = [
 							? "text-green-600 border-green-600"
 							: action === "REJECTED"
 							? "text-red-600 border-red-600"
+							: action === "SUBMIT"
+							? "text-blue-600 border-blue-600"
 							: ""
 					}
 				>
@@ -87,17 +88,6 @@ export const columns: ColumnDef<AuditLogItem>[] = [
 		),
 	},
 	{
-		accessorKey: "ipAddress",
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} title="IP Address" />
-		),
-		cell: ({ row }) => (
-			<span className="font-mono text-xs">
-				{row.getValue("ipAddress")}
-			</span>
-		),
-	},
-	{
 		id: "actions",
 		cell: ({ row }) => {
 			return (
@@ -119,8 +109,6 @@ export const columns: ColumnDef<AuditLogItem>[] = [
 						>
 							Copy Log JSON
 						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem>View full details</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			);

@@ -106,7 +106,7 @@ export default function CreateProposalForm() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="budget">Budget ($)</Label>
+						<Label htmlFor="budget">Budget (Rp)</Label>
 						<Input
 							id="budget"
 							type="number"

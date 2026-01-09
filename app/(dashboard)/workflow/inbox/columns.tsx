@@ -14,20 +14,69 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTableColumnHeader } from "@/components/datatable/data-table-column-header";
 
+import { useViewDetails } from "@/hooks/use-view-details";
+
 export type InboxItem = {
 	id: string;
 	title: string;
-	status: "PENDING" | "APPROVED" | "REJECTED";
+	stepName: string;
+	status: string;
 	requestedBy: string;
 	createdAt: string;
-	priority: "LOW" | "MEDIUM" | "HIGH";
+	refType: string;
+	refId: string;
+};
+
+const ActionCell = ({ item }: { item: InboxItem }) => {
+	const { handleViewDetails } = useViewDetails();
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant="ghost" className="h-8 w-8 p-0">
+					<span className="sr-only">Open menu</span>
+					<MoreHorizontal className="h-4 w-4" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end">
+				<DropdownMenuLabel>Actions</DropdownMenuLabel>
+				<DropdownMenuItem
+					onClick={() => navigator.clipboard.writeText(item.id)}
+				>
+					Copy ID
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					onClick={() => handleViewDetails(item.refType, item.refId)}
+				>
+					View details
+				</DropdownMenuItem>
+				{item.status === "PENDING" && (
+					<>
+						<DropdownMenuItem>Approve</DropdownMenuItem>
+						<DropdownMenuItem className="text-red-600">
+							Reject
+						</DropdownMenuItem>
+					</>
+				)}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 };
 
 export const columns: ColumnDef<InboxItem>[] = [
 	{
 		accessorKey: "title",
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} title="Title" />
+			<DataTableColumnHeader column={column} title="Workflow" />
+		),
+		cell: ({ row }) => (
+			<div className="flex flex-col">
+				<span className="font-medium">{row.getValue("title")}</span>
+				<span className="text-xs text-muted-foreground">
+					{row.original.stepName}
+				</span>
+			</div>
 		),
 	},
 	{
@@ -35,28 +84,6 @@ export const columns: ColumnDef<InboxItem>[] = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Requested By" />
 		),
-	},
-	{
-		accessorKey: "priority",
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} title="Priority" />
-		),
-		cell: ({ row }) => {
-			const priority = row.getValue("priority") as string;
-			return (
-				<Badge
-					variant={
-						priority === "HIGH"
-							? "destructive"
-							: priority === "MEDIUM"
-							? "secondary"
-							: "outline"
-					}
-				>
-					{priority}
-				</Badge>
-			);
-		},
 	},
 	{
 		accessorKey: "status",
@@ -96,35 +123,6 @@ export const columns: ColumnDef<InboxItem>[] = [
 	},
 	{
 		id: "actions",
-		cell: ({ row }) => {
-			const payment = row.original;
-
-			return (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost" className="h-8 w-8 p-0">
-							<span className="sr-only">Open menu</span>
-							<MoreHorizontal className="h-4 w-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end">
-						<DropdownMenuLabel>Actions</DropdownMenuLabel>
-						<DropdownMenuItem
-							onClick={() =>
-								navigator.clipboard.writeText(payment.id)
-							}
-						>
-							Copy ID
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem>View details</DropdownMenuItem>
-						<DropdownMenuItem>Approve</DropdownMenuItem>
-						<DropdownMenuItem className="text-red-600">
-							Reject
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
-			);
-		},
+		cell: ({ row }) => <ActionCell item={row.original} />,
 	},
 ];
