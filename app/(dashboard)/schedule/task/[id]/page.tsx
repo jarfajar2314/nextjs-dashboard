@@ -61,6 +61,17 @@ import { DateTimePicker } from "@/components/date-time-picker";
 import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import Link from "next/link";
 
+const COLORS = [
+	{ name: "Blue", value: "#3b82f6" },
+	{ name: "Red", value: "#ef4444" },
+	{ name: "Green", value: "#22c55e" },
+	{ name: "Yellow", value: "#eab308" },
+	{ name: "Purple", value: "#a855f7" },
+	{ name: "Pink", value: "#ec4899" },
+	{ name: "Orange", value: "#f97316" },
+	{ name: "Gray", value: "#6b7280" },
+];
+
 export default function TaskDetailPage() {
 	const params = useParams();
 	const taskId = params.id as string;
@@ -543,57 +554,70 @@ export default function TaskDetailPage() {
 							<CardTitle className="flex items-center gap-2">
 								<History className="h-5 w-5" /> Audit Trail
 							</CardTitle>
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="outline" size="sm">
-										<Filter className="mr-2 h-4 w-4" />{" "}
-										Filter
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuLabel>
-										Filter by Action
-									</DropdownMenuLabel>
-									<DropdownMenuCheckboxItem
-										checked={auditFilters.action === null}
-										onCheckedChange={() =>
-											setAuditFilters({
-												...auditFilters,
-												action: null,
-											})
-										}
-									>
-										All Actions
-									</DropdownMenuCheckboxItem>
-									<DropdownMenuCheckboxItem
-										checked={
-											auditFilters.action === "UPDATE"
-										}
-										onCheckedChange={() =>
-											setAuditFilters({
-												...auditFilters,
-												action: "UPDATE",
-											})
-										}
-									>
-										Updates
-									</DropdownMenuCheckboxItem>
-									<DropdownMenuCheckboxItem
-										checked={
-											auditFilters.action ===
-											"STATUS_CHANGE"
-										}
-										onCheckedChange={() =>
-											setAuditFilters({
-												...auditFilters,
-												action: "STATUS_CHANGE",
-											})
-										}
-									>
-										Status Changes
-									</DropdownMenuCheckboxItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => {
+										window.location.href = `/api/tasks/${taskId}/audits/export`;
+									}}
+								>
+									<Download className="mr-2 h-4 w-4" /> Export
+								</Button>
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="outline" size="sm">
+											<Filter className="mr-2 h-4 w-4" />{" "}
+											Filter
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuLabel>
+											Filter by Action
+										</DropdownMenuLabel>
+										<DropdownMenuCheckboxItem
+											checked={
+												auditFilters.action === null
+											}
+											onCheckedChange={() =>
+												setAuditFilters({
+													...auditFilters,
+													action: null,
+												})
+											}
+										>
+											All Actions
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={
+												auditFilters.action === "UPDATE"
+											}
+											onCheckedChange={() =>
+												setAuditFilters({
+													...auditFilters,
+													action: "UPDATE",
+												})
+											}
+										>
+											Updates
+										</DropdownMenuCheckboxItem>
+										<DropdownMenuCheckboxItem
+											checked={
+												auditFilters.action ===
+												"STATUS_CHANGE"
+											}
+											onCheckedChange={() =>
+												setAuditFilters({
+													...auditFilters,
+													action: "STATUS_CHANGE",
+												})
+											}
+										>
+											Status Changes
+										</DropdownMenuCheckboxItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
 						</CardHeader>
 						<CardContent>
 							{auditLoading ? (
@@ -748,6 +772,55 @@ export default function TaskDetailPage() {
 										</div>
 									)}
 								</div>
+							</div>
+
+							<div className="space-y-2">
+								<span className="text-xs text-muted-foreground font-medium">
+									Color
+								</span>
+								{isEditing ? (
+									<div className="flex flex-wrap gap-2">
+										{COLORS.map((c) => (
+											<button
+												key={c.value}
+												type="button"
+												onClick={() =>
+													setFormData({
+														...formData,
+														color: c.value,
+													})
+												}
+												className={cn(
+													"w-6 h-6 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+													formData.color ===
+														c.value &&
+														"ring-2 ring-ring ring-offset-2 scale-110",
+												)}
+												style={{
+													backgroundColor: c.value,
+												}}
+												title={c.name}
+											/>
+										))}
+									</div>
+								) : (
+									<div className="flex items-center gap-2">
+										<div
+											className="w-4 h-4 rounded-full border border-muted"
+											style={{
+												backgroundColor:
+													task.color || "#3b82f6",
+											}}
+										/>
+										<span className="text-sm">
+											{COLORS.find(
+												(c) =>
+													c.value ===
+													(task.color || "#3b82f6"),
+											)?.name || "Default"}
+										</span>
+									</div>
+								)}
 							</div>
 
 							<Separator />

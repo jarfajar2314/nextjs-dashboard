@@ -315,6 +315,58 @@ export function CreateTaskModal({
 							/>
 						</div>
 
+						{/* Color */}
+						<div className="space-y-2">
+							<Label>Color</Label>
+							<Controller
+								control={control}
+								name="color"
+								render={({ field }) => (
+									<div className="flex flex-wrap gap-2">
+										{[
+											{ name: "Blue", value: "#3b82f6" },
+											{ name: "Red", value: "#ef4444" },
+											{
+												name: "Green",
+												value: "#22c55e",
+											},
+											{
+												name: "Yellow",
+												value: "#eab308",
+											},
+											{
+												name: "Purple",
+												value: "#a855f7",
+											},
+											{ name: "Pink", value: "#ec4899" },
+											{
+												name: "Orange",
+												value: "#f97316",
+											},
+											{ name: "Gray", value: "#6b7280" },
+										].map((c) => (
+											<button
+												key={c.value}
+												type="button"
+												onClick={() =>
+													field.onChange(c.value)
+												}
+												className={`w-6 h-6 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+													field.value === c.value
+														? "ring-2 ring-ring ring-offset-2 scale-110"
+														: ""
+												}`}
+												style={{
+													backgroundColor: c.value,
+												}}
+												title={c.name}
+											/>
+										))}
+									</div>
+								)}
+							/>
+						</div>
+
 						{/* All Day Switch */}
 						<div className="flex items-center space-x-2 pt-8">
 							<Controller

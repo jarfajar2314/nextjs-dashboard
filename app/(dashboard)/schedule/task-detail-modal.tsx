@@ -61,6 +61,17 @@ interface TaskDetailModalProps {
 	onUpdate?: () => void; // Refresh parent
 }
 
+const COLORS = [
+	{ name: "Blue", value: "#3b82f6" },
+	{ name: "Red", value: "#ef4444" },
+	{ name: "Green", value: "#22c55e" },
+	{ name: "Yellow", value: "#eab308" },
+	{ name: "Purple", value: "#a855f7" },
+	{ name: "Pink", value: "#ec4899" },
+	{ name: "Orange", value: "#f97316" },
+	{ name: "Gray", value: "#6b7280" },
+];
+
 export function ActivityDetailsModal({
 	isVisible,
 	onClose,
@@ -323,21 +334,30 @@ export function ActivityDetailsModal({
 											</SelectContent>
 										</Select>
 
-										<div className="flex items-center gap-1 border rounded-md px-2 h-8 bg-background">
-											<span className="text-xs text-muted-foreground mr-1">
-												Color:
-											</span>
-											<input
-												type="color"
-												value={formData.color}
-												onChange={(e) =>
-													setFormData({
-														...formData,
-														color: e.target.value,
-													})
-												}
-												className="w-6 h-6 border-none bg-transparent cursor-pointer p-0"
-											/>
+										<div className="flex items-center gap-1 ml-2">
+											{COLORS.map((c) => (
+												<button
+													key={c.value}
+													type="button"
+													onClick={() =>
+														setFormData({
+															...formData,
+															color: c.value,
+														})
+													}
+													className={cn(
+														"w-5 h-5 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+														formData.color ===
+															c.value &&
+															"ring-2 ring-ring ring-offset-2 scale-110",
+													)}
+													style={{
+														backgroundColor:
+															c.value,
+													}}
+													title={c.name}
+												/>
+											))}
 										</div>
 									</div>
 								</div>

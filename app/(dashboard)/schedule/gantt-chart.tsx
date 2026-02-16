@@ -8,8 +8,9 @@ import {
 	subMonths,
 	isSameDay,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
 	Tooltip,
 	TooltipContent,
@@ -29,6 +30,7 @@ interface Task {
 	title: string;
 	startAt: string | null;
 	endAt: string | null;
+	color?: string | null;
 	status: {
 		name: string;
 		color: string;
@@ -146,6 +148,28 @@ export function GanttChart() {
 		setCurrentDate(date);
 	};
 
+	const handleExport = () => {
+		const startOfMonth = new Date(
+			currentDate.getFullYear(),
+			currentDate.getMonth(),
+			1,
+		);
+		const endOfMonth = new Date(
+			currentDate.getFullYear(),
+			currentDate.getMonth() + 1,
+			0,
+		);
+		endOfMonth.setHours(23, 59, 59, 999);
+
+		const query = new URLSearchParams({
+			from: startOfMonth.toISOString(),
+			to: endOfMonth.toISOString(),
+			format: "xlsx",
+		});
+
+		window.location.href = `/api/tasks/export?${query.toString()}`;
+	};
+
 	const showActivityDetails = (activity: any) => {
 		setSelectedActivity({
 			...activity,
@@ -202,6 +226,26 @@ export function GanttChart() {
 		const lanes = getEmployeeLanes(employee);
 		const rowSpan = lanes.length;
 
+		// Calculate total days
+		const totalDays = lanes.flat().reduce((acc, task) => {
+			const viewStart = dates[0];
+			const viewEnd = dates[dates.length - 1];
+
+			// Clamp task dates to view
+			const taskStart = normalizeDate(task.startDate);
+			const taskEnd = normalizeDate(task.endDate);
+			const start = taskStart < viewStart ? viewStart : taskStart;
+			const end = taskEnd > viewEnd ? viewEnd : taskEnd;
+
+			if (start > end) return acc;
+
+			const days =
+				Math.floor(
+					(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+				) + 1;
+			return acc + days;
+		}, 0);
+
 		return lanes.map((laneTasks, laneIndex) => {
 			let skipDays = 0;
 			const cells = [];
@@ -236,12 +280,18 @@ export function GanttChart() {
 
 					skipDays = span - 1;
 
-					// Color based on status or priority if available
+					// Color preference: task.color -> status defaults -> theme
 					let colorClass = "bg-primary text-primary-foreground";
-					if (task.status?.name === "Done")
+					let taskStyle = {};
+
+					if (task.color) {
+						colorClass = "text-white";
+						taskStyle = { backgroundColor: task.color };
+					} else if (task.status?.name === "Done") {
 						colorClass = "bg-green-500 text-white";
-					else if (task.status?.name === "In Progress")
+					} else if (task.status?.name === "In Progress") {
 						colorClass = "bg-blue-500 text-white";
+					}
 
 					cells.push(
 						<td
@@ -256,6 +306,7 @@ export function GanttChart() {
 											colorClass,
 											"m-1 rounded-md text-xs flex items-center justify-center cursor-pointer shadow-sm hover:opacity-90 transition-all h-[calc(100%-8px)]",
 										)}
+										style={taskStyle}
 										onClick={() =>
 											showActivityDetails(task)
 										}
@@ -300,6 +351,12 @@ export function GanttChart() {
 								>
 									{employee.name}
 								</span>
+								<Badge
+									variant="secondary"
+									className="text-[10px] px-1 py-0 h-5 whitespace-nowrap"
+								>
+									{totalDays}d
+								</Badge>
 							</div>
 						</td>
 					)}
@@ -342,14 +399,17 @@ export function GanttChart() {
 				</div>
 
 				<div className="flex items-center gap-4">
+					<Button variant="outline" size="sm" onClick={handleExport}>
+						<Download className="h-4 w-4 mr-2" /> Export
+					</Button>
 					<Button
 						size="sm"
 						onClick={() => setIsCreateModalOpen(true)}
 					>
 						<Plus className="h-4 w-4 mr-2" /> Create Task
 					</Button>
-					<div className="flex gap-4 text-xs text-muted-foreground">
-						{/* Legend placeholders */}
+					{/* Legend placeholders */}
+					{/* <div className="flex gap-4 text-xs text-muted-foreground">
 						<div className="flex items-center gap-1.5">
 							<span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>{" "}
 							In Progress
@@ -358,7 +418,7 @@ export function GanttChart() {
 							<span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>{" "}
 							Done
 						</div>
-					</div>
+					</div> */}
 				</div>
 			</div>
 
