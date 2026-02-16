@@ -49,7 +49,7 @@ export const auth = betterAuth({
 	databaseHooks: {
 		user: {
 			create: {
-				after: async (user) => {
+				after: async (user: any) => {
 					// Check if "user" role exists
 					const userRole = await prisma.role.findUnique({
 						where: { name: "user" },
@@ -84,38 +84,40 @@ export const auth = betterAuth({
 			adminRoles: ["admin", "superadmin"],
 		}),
 		// Custom session plugin to inject roles and permissions
-		customSession(async ({ user, session }) => {
-			// Fetch roles and permissions for this user
-			const userData = await prisma.user.findUnique({
-				where: { id: user.id },
-				include: {
-					roles: {
-						include: {
-							permissions: true,
+		customSession(
+			async ({ user, session }: { user: any; session: any }) => {
+				// Fetch roles and permissions for this user
+				const userData = await prisma.user.findUnique({
+					where: { id: user.id },
+					include: {
+						roles: {
+							include: {
+								permissions: true,
+							},
 						},
 					},
-				},
-			});
-
-			if (!userData) {
-				return { user, session };
-			}
-
-			const allPermissions = new Set<string>();
-			userData.roles.forEach((role) => {
-				role.permissions.forEach((p) => {
-					allPermissions.add(`${p.action}:${p.resource}`);
 				});
-			});
 
-			return {
-				user: {
-					...user,
-					roles: userData.roles.map((r) => r.name),
-					permissions: Array.from(allPermissions),
-				},
-				session,
-			};
-		}),
+				if (!userData) {
+					return { user, session };
+				}
+
+				const allPermissions = new Set<string>();
+				userData.roles.forEach((role: any) => {
+					role.permissions.forEach((p: any) => {
+						allPermissions.add(`${p.action}:${p.resource}`);
+					});
+				});
+
+				return {
+					user: {
+						...user,
+						roles: userData.roles.map((r: any) => r.name),
+						permissions: Array.from(allPermissions),
+					},
+					session,
+				};
+			},
+		),
 	],
 });

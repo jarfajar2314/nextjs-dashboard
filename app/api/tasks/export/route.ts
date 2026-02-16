@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUserId, handleApiError } from "@/lib/task-utils";
 import xlsx from "node-xlsx";
+import { Prisma } from "@prisma/client";
 
 export async function GET(req: Request) {
 	try {
@@ -88,15 +89,15 @@ export async function GET(req: Request) {
 		// These are IDs in the Task model. It's friendlier to show names.
 		// Let's gather user IDs and fetch them.
 		const userIds = new Set<string>();
-		tasks.forEach((t) => {
+		tasks.forEach((t: any) => {
 			if (t.createdById) userIds.add(t.createdById);
 			if (t.updatedById) userIds.add(t.updatedById);
 		});
 
-		const users = await prisma.user.findMany({
+		const users = (await prisma.user.findMany({
 			where: { id: { in: Array.from(userIds) } },
 			select: { id: true, name: true, email: true },
-		});
+		})) as any[];
 		const userMap = new Map(users.map((u) => [u.id, u]));
 
 		const formatUser = (uid: string | null) => {
@@ -127,11 +128,11 @@ export async function GET(req: Request) {
 		];
 
 		// Rows
-		const rows = tasks.map((t) => {
+		const rows = tasks.map((t: any) => {
 			const assignees = t.assignments
-				.map((a) => a.assignee.name)
+				.map((a: any) => a.assignee.name)
 				.join(", ");
-			const labels = t.labels.map((l) => l.label.name).join(", ");
+			const labels = t.labels.map((l: any) => l.label.name).join(", ");
 
 			return [
 				t.id,

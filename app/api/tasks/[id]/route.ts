@@ -7,7 +7,7 @@ import {
 } from "@/lib/task-utils";
 import { TaskUpdateSchema } from "@/lib/task-validators";
 import { z } from "zod";
-import { TaskAuditAction } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
 	req: Request,
@@ -64,26 +64,26 @@ export async function GET(
 
 		// Resolve Users
 		const userIds = new Set<string>();
-		comments.forEach((c) => userIds.add(c.createdById));
-		audits.forEach((a) => {
+		comments.forEach((c: any) => userIds.add(c.createdById));
+		audits.forEach((a: any) => {
 			if (a.byUserId) userIds.add(a.byUserId);
 		});
 
-		const users = await prisma.user.findMany({
+		const users = (await prisma.user.findMany({
 			where: { id: { in: Array.from(userIds) } },
 			select: { id: true, name: true, image: true },
-		});
+		})) as any[];
 		const userMap = new Map(users.map((u) => [u.id, u]));
 
 		const enrichedTask = {
 			...task,
-			comments: comments.map((c) => ({
+			comments: comments.map((c: any) => ({
 				...c,
 				author:
 					userMap.get(c.createdById) ||
 					({ name: "Unknown", image: null } as any),
 			})),
-			auditTrail: audits.map((a) => ({
+			auditTrail: audits.map((a: any) => ({
 				...a,
 				byUser: a.byUserId
 					? userMap.get(a.byUserId) ||
@@ -129,11 +129,13 @@ export async function PATCH(
 		let newLabelIds: string[] = [];
 
 		if (body.labelSlugs) {
-			const currentSlugs = oldTask.labels.map((l) => l.label.slug);
+			const currentSlugs = oldTask.labels.map((l: any) => l.label.slug);
 			const newSlugs = body.labelSlugs;
 
 			const toAdd = newSlugs.filter((s) => !currentSlugs.includes(s));
-			const toRemove = currentSlugs.filter((s) => !newSlugs.includes(s));
+			const toRemove = currentSlugs.filter(
+				(s: string) => !newSlugs.includes(s),
+			);
 
 			if (toAdd.length > 0) {
 				const labels = await prisma.label.findMany({
@@ -141,7 +143,7 @@ export async function PATCH(
 					select: { id: true, slug: true },
 				});
 				// Validate existence
-				const foundSlugs = labels.map((l) => l.slug);
+				const foundSlugs = labels.map((l: any) => l.slug);
 				const missing = toAdd.filter((s) => !foundSlugs.includes(s));
 				if (missing.length > 0) {
 					return NextResponse.json(
@@ -152,15 +154,15 @@ export async function PATCH(
 						{ status: 400 },
 					);
 				}
-				newLabelIds = labels.map((l) => l.id);
+				newLabelIds = labels.map((l: any) => l.id);
 				labelsToCreate = newLabelIds;
 			}
 
 			// To delete, we need labelIds.
 			// We can get them from oldTask.labels
 			labelsToDelete = oldTask.labels
-				.filter((l) => toRemove.includes(l.label.slug))
-				.map((l) => l.labelId);
+				.filter((l: any) => toRemove.includes(l.label.slug))
+				.map((l: any) => l.labelId);
 		}
 
 		// --- Assignees Logic ---
@@ -168,12 +170,14 @@ export async function PATCH(
 		let assigneesToRemove: string[] = [];
 
 		if (body.assigneeIds) {
-			const currentIds = oldTask.assignments.map((a) => a.assigneeId);
+			const currentIds = oldTask.assignments.map(
+				(a: any) => a.assigneeId,
+			);
 			assigneesToAdd = body.assigneeIds.filter(
 				(id) => !currentIds.includes(id),
 			);
 			assigneesToRemove = currentIds.filter(
-				(id) => !body.assigneeIds!.includes(id),
+				(id: string) => !body.assigneeIds!.includes(id),
 			);
 		}
 
@@ -225,135 +229,139 @@ export async function PATCH(
 		});
 
 		// --- Transaction ---
-		const result = await prisma.$transaction(async (tx) => {
-			// 1. Update Task
-			const updatedTask = await tx.task.update({
-				where: { id },
-				data: {
-					...updates,
-					updatedById: userId,
-				},
-			});
-
-			// 2. Update Assignees
-			if (assigneesToRemove.length > 0) {
-				await tx.taskAssignment.deleteMany({
-					where: {
-						taskId: id,
-						assigneeId: { in: assigneesToRemove },
-					},
-				});
-				await tx.taskAuditTrail.create({
+		const result = await prisma.$transaction(
+			async (tx: Prisma.TransactionClient) => {
+				// 1. Update Task
+				const updatedTask = await tx.task.update({
+					where: { id },
 					data: {
-						taskId: id,
-						action: TaskAuditAction.UNASSIGN,
-						byUserId: userId,
-						data: { removedIds: assigneesToRemove },
-						message: "Assignees removed",
+						...updates,
+						updatedById: userId,
 					},
 				});
-			}
-			if (assigneesToAdd.length > 0) {
-				await tx.taskAssignment.createMany({
-					data: assigneesToAdd.map((uid) => ({
-						taskId: id,
-						assigneeId: uid,
-						assignedById: userId,
-					})),
-				});
-				await tx.taskAuditTrail.create({
-					data: {
-						taskId: id,
-						action: TaskAuditAction.ASSIGN,
-						byUserId: userId,
-						data: { addedIds: assigneesToAdd },
-						message: "Assignees added",
-					},
-				});
-			}
 
-			// 3. Update Labels
-			if (labelsToDelete.length > 0) {
-				await tx.taskLabel.deleteMany({
-					where: {
-						taskId: id,
-						labelId: { in: labelsToDelete },
-					},
-				});
-			}
-			if (labelsToCreate.length > 0) {
-				await tx.taskLabel.createMany({
-					data: labelsToCreate.map((lid) => ({
-						taskId: id,
-						labelId: lid,
-						assignedById: userId,
-					})),
-				});
-			}
-			// Log label changes as part of general update or separate?
-			// "comment create/label changes... create TaskAuditTrail row"
-			// Let's add specific audit if labels changed
-			if (labelsToDelete.length > 0 || labelsToCreate.length > 0) {
-				// Create a synthetic Update action or specific message?
-				// Requirement: "CREATE, UPDATE, STATUS_CHANGE, ASSIGN, UNASSIGN, COMMENT, DELETE."
-				// So use UPDATE with label diff.
-				// We can merge this into the main UPDATE diff if strict is not required,
-				// OR create a separate entry. A separate entry is cleaner if "diff" variable is null otherwise.
-				// But usually we want one UPDATE entry per request.
-				// I'll append label changes to `diff` if possible, or create separate if `diff` is null.
-			}
-
-			// 4. Status Change Audit
-			if (body.statusId && body.statusId !== oldTask.statusId) {
-				await tx.taskAuditTrail.create({
-					data: {
-						taskId: id,
-						action: TaskAuditAction.STATUS_CHANGE,
-						byUserId: userId,
-						data: { from: oldTask.statusId, to: body.statusId },
-						message: "Status changed",
-					},
-				});
-			}
-
-			// 5. Main Update Audit (Title, Desc, Time, Color, Labels)
-			// I'll add labels to the diff manually if they changed
-			let finalDiff: any = diff || {};
-			if (body.labelSlugs) {
-				const currentSlugs = oldTask.labels.map((l) => l.label.slug);
-				const newSlugs = body.labelSlugs;
-				if (
-					JSON.stringify(currentSlugs.sort()) !==
-					JSON.stringify(newSlugs.sort())
-				) {
-					finalDiff.labels = { from: currentSlugs, to: newSlugs };
-				}
-			}
-
-			// If we have any updates to task fields (including labels)
-			if (Object.keys(finalDiff).length > 0) {
-				// Filter out statusId from finalDiff if we already logged it separately?
-				// Requirement says "STATUS_CHANGE when statusId changes".
-				// So yes, remove statusId from "UPDATE" diff to avoid redundancy.
-				delete finalDiff.statusId;
-				delete finalDiff.updatedById; // metadata
-				delete finalDiff.updatedAt;
-
-				if (Object.keys(finalDiff).length > 0) {
+				// 2. Update Assignees
+				if (assigneesToRemove.length > 0) {
+					await tx.taskAssignment.deleteMany({
+						where: {
+							taskId: id,
+							assigneeId: { in: assigneesToRemove },
+						},
+					});
 					await tx.taskAuditTrail.create({
 						data: {
 							taskId: id,
-							action: TaskAuditAction.UPDATE,
+							action: "UNASSIGN",
 							byUserId: userId,
-							data: finalDiff,
-							message: "Task updated",
+							data: { removedIds: assigneesToRemove },
+							message: "Assignees removed",
 						},
 					});
 				}
-			}
+				if (assigneesToAdd.length > 0) {
+					await tx.taskAssignment.createMany({
+						data: assigneesToAdd.map((uid) => ({
+							taskId: id,
+							assigneeId: uid,
+							assignedById: userId,
+						})),
+					});
+					await tx.taskAuditTrail.create({
+						data: {
+							taskId: id,
+							action: "ASSIGN",
+							byUserId: userId,
+							data: { addedIds: assigneesToAdd },
+							message: "Assignees added",
+						},
+					});
+				}
 
-			return updatedTask;
-		});
+				// 3. Update Labels
+				if (labelsToDelete.length > 0) {
+					await tx.taskLabel.deleteMany({
+						where: {
+							taskId: id,
+							labelId: { in: labelsToDelete },
+						},
+					});
+				}
+				if (labelsToCreate.length > 0) {
+					await tx.taskLabel.createMany({
+						data: labelsToCreate.map((lid) => ({
+							taskId: id,
+							labelId: lid,
+							assignedById: userId,
+						})),
+					});
+				}
+				// Log label changes as part of general update or separate?
+				// "comment create/label changes... create TaskAuditTrail row"
+				// Let's add specific audit if labels changed
+				if (labelsToDelete.length > 0 || labelsToCreate.length > 0) {
+					// Create a synthetic Update action or specific message?
+					// Requirement: "CREATE, UPDATE, STATUS_CHANGE, ASSIGN, UNASSIGN, COMMENT, DELETE."
+					// So use UPDATE with label diff.
+					// We can merge this into the main UPDATE diff if strict is not required,
+					// OR create a separate entry. A separate entry is cleaner if "diff" variable is null otherwise.
+					// But usually we want one UPDATE entry per request.
+					// I'll append label changes to `diff` if possible, or create separate if `diff` is null.
+				}
+
+				// 4. Status Change Audit
+				if (body.statusId && body.statusId !== oldTask.statusId) {
+					await tx.taskAuditTrail.create({
+						data: {
+							taskId: id,
+							action: "STATUS_CHANGE",
+							byUserId: userId,
+							data: { from: oldTask.statusId, to: body.statusId },
+							message: "Status changed",
+						},
+					});
+				}
+
+				// 5. Main Update Audit (Title, Desc, Time, Color, Labels)
+				// I'll add labels to the diff manually if they changed
+				let finalDiff: any = diff || {};
+				if (body.labelSlugs) {
+					const currentSlugs = oldTask.labels.map(
+						(l: any) => l.label.slug,
+					);
+					const newSlugs = body.labelSlugs;
+					if (
+						JSON.stringify(currentSlugs.sort()) !==
+						JSON.stringify(newSlugs.sort())
+					) {
+						finalDiff.labels = { from: currentSlugs, to: newSlugs };
+					}
+				}
+
+				// If we have any updates to task fields (including labels)
+				if (Object.keys(finalDiff).length > 0) {
+					// Filter out statusId from finalDiff if we already logged it separately?
+					// Requirement says "STATUS_CHANGE when statusId changes".
+					// So yes, remove statusId from "UPDATE" diff to avoid redundancy.
+					delete finalDiff.statusId;
+					delete finalDiff.updatedById; // metadata
+					delete finalDiff.updatedAt;
+
+					if (Object.keys(finalDiff).length > 0) {
+						await tx.taskAuditTrail.create({
+							data: {
+								taskId: id,
+								action: "UPDATE",
+								byUserId: userId,
+								data: finalDiff,
+								message: "Task updated",
+							},
+						});
+					}
+				}
+
+				return updatedTask;
+			},
+		);
 
 		return NextResponse.json({ ok: true, data: result });
 	} catch (error) {
@@ -392,12 +400,12 @@ export async function DELETE(
 		// Maybe they are streaming logs or using triggers? Or maybe they didn't realize.
 		// Implementation:
 
-		await prisma.$transaction(async (tx) => {
+		await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 			// Create audit (it will die immediately, but complies with request)
 			await tx.taskAuditTrail.create({
 				data: {
 					taskId: id,
-					action: TaskAuditAction.DELETE,
+					action: "DELETE",
 					byUserId: userId,
 					message: "Task deleted",
 				},

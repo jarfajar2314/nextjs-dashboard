@@ -7,7 +7,7 @@ import {
 } from "@/lib/task-utils";
 import { TaskCreateSchema } from "@/lib/task-validators";
 import { z } from "zod";
-import { TaskAuditAction, TaskType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export async function GET(req: Request) {
 	try {
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
 			const existingLabels = await prisma.label.findMany({
 				where: { slug: { in: body.labelSlugs } },
 			});
-			const foundSlugs = new Set(existingLabels.map((l) => l.slug));
+			const foundSlugs = new Set(existingLabels.map((l: any) => l.slug));
 			const missingSlugs = body.labelSlugs.filter(
 				(s) => !foundSlugs.has(s),
 			);
@@ -188,74 +188,76 @@ export async function POST(req: Request) {
 		}
 
 		// Transaction
-		const result = await prisma.$transaction(async (tx) => {
-			// 1. Create Task
-			const task = await tx.task.create({
-				data: {
-					title: body.title,
-					description: body.description,
-					type: body.type || TaskType.TASK,
-					priority: body.priority || "MEDIUM",
-					statusId: body.statusId,
-					startAt: computedStartAt,
-					endAt: computedEndAt,
-					durationMin: computedDurationMin,
-					allDay: body.allDay ?? false,
-					timezone: body.timezone,
-					color: body.color,
-					createdById: userId,
-				},
-			});
+		const result = await prisma.$transaction(
+			async (tx: Prisma.TransactionClient) => {
+				// 1. Create Task
+				const task = await tx.task.create({
+					data: {
+						title: body.title,
+						description: body.description,
+						type: body.type || "TASK",
+						priority: body.priority || "MEDIUM",
+						statusId: body.statusId,
+						startAt: computedStartAt,
+						endAt: computedEndAt,
+						durationMin: computedDurationMin,
+						allDay: body.allDay ?? false,
+						timezone: body.timezone,
+						color: body.color,
+						createdById: userId,
+					},
+				});
 
-			// 2. Attachments (Assignments & Labels)
-			if (body.assigneeIds && body.assigneeIds.length > 0) {
-				await tx.taskAssignment.createMany({
-					data: body.assigneeIds.map((assigneeId) => ({
+				// 2. Attachments (Assignments & Labels)
+				if (body.assigneeIds && body.assigneeIds.length > 0) {
+					await tx.taskAssignment.createMany({
+						data: body.assigneeIds.map((assigneeId) => ({
+							taskId: task.id,
+							assigneeId,
+							assignedById: userId,
+						})),
+					});
+				}
+
+				if (body.labelSlugs && body.labelSlugs.length > 0) {
+					// Resolve IDs first
+					const labels = await tx.label.findMany({
+						where: { slug: { in: body.labelSlugs } },
+						select: { id: true },
+					});
+					await tx.taskLabel.createMany({
+						data: labels.map((l: any) => ({
+							taskId: task.id,
+							labelId: l.id,
+							assignedById: userId,
+						})),
+					});
+				}
+
+				// 3. Audit
+				// Prepare "data" snapshot
+				// We can't fetch the full task with includes inside the create call easily without a secondary read,
+				// but we have the inputs.
+				// Let's store the input body as the snapshot or the created task fields.
+				const snapshot = {
+					...task,
+					assigneeIds: body.assigneeIds,
+					labelSlugs: body.labelSlugs,
+				};
+
+				await tx.taskAuditTrail.create({
+					data: {
 						taskId: task.id,
-						assigneeId,
-						assignedById: userId,
-					})),
+						action: "CREATE",
+						byUserId: userId,
+						data: snapshot as any,
+						message: "Task created",
+					},
 				});
-			}
 
-			if (body.labelSlugs && body.labelSlugs.length > 0) {
-				// Resolve IDs first
-				const labels = await tx.label.findMany({
-					where: { slug: { in: body.labelSlugs } },
-					select: { id: true },
-				});
-				await tx.taskLabel.createMany({
-					data: labels.map((l) => ({
-						taskId: task.id,
-						labelId: l.id,
-						assignedById: userId,
-					})),
-				});
-			}
-
-			// 3. Audit
-			// Prepare "data" snapshot
-			// We can't fetch the full task with includes inside the create call easily without a secondary read,
-			// but we have the inputs.
-			// Let's store the input body as the snapshot or the created task fields.
-			const snapshot = {
-				...task,
-				assigneeIds: body.assigneeIds,
-				labelSlugs: body.labelSlugs,
-			};
-
-			await tx.taskAuditTrail.create({
-				data: {
-					taskId: task.id,
-					action: TaskAuditAction.CREATE,
-					byUserId: userId,
-					data: snapshot as any,
-					message: "Task created",
-				},
-			});
-
-			return task;
-		});
+				return task;
+			},
+		);
 
 		return NextResponse.json({ ok: true, data: result });
 	} catch (error) {

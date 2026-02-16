@@ -2,7 +2,6 @@ import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { workflow_step_instance } from "@prisma/client";
 
 export async function GET(
 	request: NextRequest,
@@ -63,15 +62,13 @@ export async function GET(
 						},
 					});
 
-				const assignment = stepInstances.find(
-					(step: workflow_step_instance) => {
-						const assigned = step.assigned_to as string[];
-						return (
-							Array.isArray(assigned) &&
-							assigned.includes(session.user.id)
-						);
-					},
-				);
+				const assignment = stepInstances.find((step: any) => {
+					const assigned = step.assigned_to as string[];
+					return (
+						Array.isArray(assigned) &&
+						assigned.includes(session.user.id)
+					);
+				});
 
 				if (assignment) {
 					currentStepInstanceId = assignment.id;

@@ -1,13 +1,11 @@
-import { workflow_step } from "@prisma/client";
-
 /**
  * Resolve which step a SEND_BACK should go to
  */
 export function resolveSendBackStep(
-	currentStep: workflow_step,
-	steps: workflow_step[],
+	currentStep: any,
+	steps: any[],
 	currentIndex: number,
-): workflow_step {
+): any {
 	switch (currentStep.reject_target_type) {
 		case "PREVIOUS": {
 			if (currentIndex <= 0) {

@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { resolveApprovers } from "@/lib/workflow/resolver";
+import { Prisma } from "@prisma/client";
 
 interface StartWorkflowOptions {
 	workflowCode: string;
@@ -18,7 +19,7 @@ export async function startWorkflow({
 	refId,
 	userId,
 }: StartWorkflowOptions) {
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		// 1. Resolve active workflow
 		const workflow = await tx.workflow.findFirst({
 			where: {

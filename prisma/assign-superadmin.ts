@@ -55,7 +55,7 @@ async function main() {
 
 	console.log("Successfully assigned superadmin role!");
 	console.log("User:", updatedUser.email);
-	console.log("Roles:", updatedUser.roles.map((r) => r.name).join(", "));
+	console.log("Roles:", updatedUser.roles.map((r: any) => r.name).join(", "));
 }
 
 main()

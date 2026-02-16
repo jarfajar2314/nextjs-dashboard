@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
 	const session = await auth.api.getSession({
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
 		return new NextResponse("stepInstanceId required", { status: 400 });
 	}
 
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		const stepInstance = await tx.workflow_step_instance.findUnique({
 			where: { id: stepInstanceId },
 			include: {

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { resolveApprovers } from "@/lib/workflow/resolver";
 import { resolveSendBackStep } from "@/lib/workflow/resolver/send-back";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
 	const session = await auth.api.getSession({
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
 	const userId = session.user.id;
 	const { stepInstanceId, comment } = await req.json();
 
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		const stepInstance = await tx.workflow_step_instance.findUnique({
 			where: { id: stepInstanceId },
 			include: {
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
 		});
 
 		// 2️⃣ Load workflow steps
-		const steps = await tx.workflow_step.findMany({
+		const steps: any[] = await tx.workflow_step.findMany({
 			where: { workflow_id: stepInstance.workflow_instance.workflow_id },
 			orderBy: { step_order: "asc" },
 		});
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
 		console.log("Steps", steps);
 
 		const currentIndex = steps.findIndex(
-			(s) => s.id === stepInstance.step_id
+			(s) => s.id === stepInstance.step_id,
 		);
 
 		if (currentIndex === -1) {
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
 		const targetStep = resolveSendBackStep(
 			stepInstance.step,
 			steps,
-			currentIndex
+			currentIndex,
 		);
 
 		console.log("Target step", targetStep);

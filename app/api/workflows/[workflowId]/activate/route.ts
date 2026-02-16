@@ -1,10 +1,11 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { hasPermission } from "@/lib/rbac";
+import { Prisma } from "@prisma/client";
 
 export async function POST(
 	req: Request,
-	{ params }: { params: Promise<{ workflowId: string }> }
+	{ params }: { params: Promise<{ workflowId: string }> },
 ) {
 	const canUpdate = await hasPermission("update", "workflows");
 	if (!canUpdate) {
@@ -26,7 +27,7 @@ export async function POST(
 			return new NextResponse("Workflow not found", { status: 404 });
 		}
 
-		return prisma.$transaction(async (tx) => {
+		return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 			// 1️⃣ Deactivate all versions of this workflow code
 			await tx.workflow.updateMany({
 				where: { code: targetWorkflow.code },

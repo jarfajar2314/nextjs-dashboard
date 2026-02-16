@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { headers } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
 	const canRead = await hasPermission("read", "workflows");
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 		return new NextResponse("Unauthorized", { status: 401 });
 	}
 
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		const lastVersion = await tx.workflow.findFirst({
 			where: { code },
 			orderBy: { version: "desc" },

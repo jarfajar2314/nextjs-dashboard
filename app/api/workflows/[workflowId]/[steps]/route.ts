@@ -3,10 +3,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { hasPermission } from "@/lib/rbac";
+import { Prisma } from "@prisma/client";
 
 export async function PUT(
 	req: Request,
-	{ params }: { params: Promise<{ workflowId: string }> }
+	{ params }: { params: Promise<{ workflowId: string }> },
 ) {
 	// 1️⃣ Permission
 	const canCreate = await hasPermission("create", "workflow_steps");
@@ -30,7 +31,7 @@ export async function PUT(
 	const stepsToCreate = Array.isArray(body) ? body : [body];
 
 	return prisma
-		.$transaction(async (tx) => {
+		.$transaction(async (tx: Prisma.TransactionClient) => {
 			// 3️⃣ Ensure workflow exists & editable
 			const workflow = await tx.workflow.findUnique({
 				where: { id: workflowId },
@@ -77,7 +78,7 @@ export async function PUT(
 					!reject_target_type
 				) {
 					throw new Error(
-						`Invalid payload for step ${step_key || "unknown"}`
+						`Invalid payload for step ${step_key || "unknown"}`,
 					);
 				}
 
@@ -108,7 +109,7 @@ export async function PUT(
 
 				if (conflict) {
 					throw new Error(
-						`Step key '${step_key}' or order '${step_order}' already exists`
+						`Step key '${step_key}' or order '${step_order}' already exists`,
 					);
 				}
 
@@ -148,7 +149,7 @@ export async function PUT(
 
 			return NextResponse.json(createdSteps, { status: 201 });
 		})
-		.catch((error) => {
+		.catch((error: any) => {
 			return new NextResponse(error.message || "Internal Server Error", {
 				status: 400,
 			});
@@ -157,7 +158,7 @@ export async function PUT(
 
 export async function GET(
 	_req: Request,
-	{ params }: { params: Promise<{ workflowId: string }> }
+	{ params }: { params: Promise<{ workflowId: string }> },
 ) {
 	const { workflowId } = await params;
 	const steps = await prisma.workflow_step.findMany({
@@ -166,7 +167,7 @@ export async function GET(
 	});
 
 	// Parse valid JSON strings back to CSV for frontend compatibility
-	const processedSteps = steps.map((s) => {
+	const processedSteps = steps.map((s: any) => {
 		let val = s.approver_value;
 		try {
 			const parsed = JSON.parse(val);

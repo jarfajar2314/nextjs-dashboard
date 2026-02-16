@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUserId, handleApiError } from "@/lib/task-utils";
 import xlsx from "node-xlsx";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
 	req: Request,
@@ -48,7 +49,7 @@ export async function GET(
 
 		// Fetch Audits
 		// Limit to 10k rows for performance safety
-		const audits = await prisma.taskAuditTrail.findMany({
+		const audits: any[] = await prisma.taskAuditTrail.findMany({
 			where,
 			orderBy: { at: "desc" },
 			take: 10000,
@@ -60,7 +61,7 @@ export async function GET(
 		const userIds = new Set<string>();
 		const statusIds = new Set<string>();
 
-		audits.forEach((audit) => {
+		audits.forEach((audit: any) => {
 			if (audit.byUserId) userIds.add(audit.byUserId);
 
 			const data = audit.data as any;
@@ -90,17 +91,17 @@ export async function GET(
 		});
 
 		// B. Fetch Users
-		const users = await prisma.user.findMany({
+		const users = (await prisma.user.findMany({
 			where: { id: { in: Array.from(userIds) } },
 			select: { id: true, name: true, email: true },
-		});
+		})) as any[];
 		const userMap = new Map(users.map((u) => [u.id, u]));
 
 		// C. Fetch Statuses
-		const statuses = await prisma.taskStatus.findMany({
+		const statuses = (await prisma.taskStatus.findMany({
 			where: { id: { in: Array.from(statusIds) } },
 			select: { id: true, name: true },
-		});
+		})) as any[];
 		const statusMap = new Map(statuses.map((s) => [s.id, s.name]));
 
 		// --- 2. HELPERS ---

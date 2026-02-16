@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUserId, handleApiError } from "@/lib/task-utils";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
 	req: Request,
@@ -10,26 +11,28 @@ export async function GET(
 		const userId = await requireUserId();
 		const { id } = await params;
 
-		const audits = await prisma.taskAuditTrail.findMany({
+		const audits: any[] = await prisma.taskAuditTrail.findMany({
 			where: { taskId: id },
 			orderBy: { at: "desc" },
 		});
 
 		// Manually join actor details
 		const actorIds = Array.from(
-			new Set(audits.map((a) => a.byUserId).filter(Boolean) as string[]),
+			new Set(
+				audits.map((a: any) => a.byUserId).filter(Boolean) as string[],
+			),
 		);
 
 		let actorMap = new Map();
 		if (actorIds.length > 0) {
-			const actors = await prisma.user.findMany({
+			const actors = (await prisma.user.findMany({
 				where: { id: { in: actorIds } },
 				select: { id: true, name: true, image: true, email: true },
-			});
+			})) as any[];
 			actorMap = new Map(actors.map((u) => [u.id, u]));
 		}
 
-		const enriched = audits.map((a) => ({
+		const enriched = audits.map((a: any) => ({
 			...a,
 			actor: a.byUserId ? actorMap.get(a.byUserId) : null,
 		}));

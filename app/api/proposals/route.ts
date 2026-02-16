@@ -1,7 +1,8 @@
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth"; // Assuming auth helper exists
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
 	try {
@@ -13,11 +14,11 @@ export async function GET(request: NextRequest) {
 		if (!session) {
 			return NextResponse.json(
 				{ error: "Unauthorized" },
-				{ status: 401 }
+				{ status: 401 },
 			);
 		}
 
-		const proposals = await prisma.projectProposal.findMany({
+		const proposals: any[] = await prisma.projectProposal.findMany({
 			orderBy: {
 				createdAt: "desc",
 			},
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
 		const userIds = Array.from(new Set(proposals.map((p) => p.userId)));
 
-		const users = await prisma.user.findMany({
+		const users = (await prisma.user.findMany({
 			where: { id: { in: userIds } },
 			select: {
 				id: true,
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 				email: true,
 				image: true,
 			},
-		});
+		})) as any[];
 
 		const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 		console.error("Error fetching proposals:", error);
 		return NextResponse.json(
 			{ error: "Internal Server Error" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
 		if (!session) {
 			return NextResponse.json(
 				{ error: "Unauthorized" },
-				{ status: 401 }
+				{ status: 401 },
 			);
 		}
 
@@ -72,44 +73,46 @@ export async function POST(request: NextRequest) {
 		if (!title) {
 			return NextResponse.json(
 				{ error: "Title is required" },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
-		const result = await prisma.$transaction(async (tx) => {
-			const proposal = await tx.projectProposal.create({
-				data: {
-					title,
-					description,
-					budget,
-					userId: session.user.id,
-					status: "DRAFT",
-				},
-			});
-
-			if (attachments && Array.isArray(attachments)) {
-				await tx.attachment.createMany({
-					data: attachments.map((att: any) => ({
-						name: att.name,
-						url: att.url,
-						type: att.type,
-						size: att.size,
-						refType: "project_proposal",
-						refId: proposal.id,
-						uploadedBy: session.user.id,
-					})),
+		const result = await prisma.$transaction(
+			async (tx: Prisma.TransactionClient) => {
+				const proposal = await tx.projectProposal.create({
+					data: {
+						title,
+						description,
+						budget,
+						userId: session.user.id,
+						status: "DRAFT",
+					},
 				});
-			}
 
-			return proposal;
-		});
+				if (attachments && Array.isArray(attachments)) {
+					await tx.attachment.createMany({
+						data: attachments.map((att: any) => ({
+							name: att.name,
+							url: att.url,
+							type: att.type,
+							size: att.size,
+							refType: "project_proposal",
+							refId: proposal.id,
+							uploadedBy: session.user.id,
+						})),
+					});
+				}
+
+				return proposal;
+			},
+		);
 
 		return NextResponse.json(result);
 	} catch (error) {
 		console.error("Error creating proposal:", error);
 		return NextResponse.json(
 			{ error: "Internal Server Error" },
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 }

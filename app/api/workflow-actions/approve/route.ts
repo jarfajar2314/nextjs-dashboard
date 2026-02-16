@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { resolveApprovers } from "@/lib/workflow/resolver";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
 	// 1️⃣ Auth
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
 		return new NextResponse("stepInstanceId required", { status: 400 });
 	}
 
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		// 2️⃣ Load step instance with relations
 		const stepInstance = await tx.workflow_step_instance.findUnique({
 			where: { id: stepInstanceId },
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
 		});
 
 		// 6️⃣ Load workflow steps (definition)
-		const steps = await tx.workflow_step.findMany({
+		const steps: any[] = await tx.workflow_step.findMany({
 			where: {
 				workflow_id: stepInstance.workflow_instance.workflow_id,
 			},
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
 
 		// 7️⃣ Find next step
 		const currentIndex = steps.findIndex(
-			(s) => s.id === stepInstance.step_id
+			(s) => s.id === stepInstance.step_id,
 		);
 
 		const currentStep = steps[currentIndex];

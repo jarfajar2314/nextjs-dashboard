@@ -87,9 +87,9 @@ export async function GET(req: Request) {
 
 	// Fetch user names for requestedBy
 	const creatorIds = Array.from(
-		new Set(items.map((item) => item.workflow_instance.created_by))
+		new Set(items.map((item: any) => item.workflow_instance.created_by)),
 	);
-	const users = await prisma.user.findMany({
+	const users = (await prisma.user.findMany({
 		where: {
 			id: {
 				in: creatorIds,
@@ -100,14 +100,14 @@ export async function GET(req: Request) {
 			name: true,
 			email: true,
 		},
-	});
+	})) as any[];
 
 	const userMap = new Map(
-		users.map((u) => [u.id, u.name || u.email || "Unknown"])
+		users.map((u) => [u.id, u.name || u.email || "Unknown"]),
 	);
 
 	// 4️⃣ Response shaping (frontend friendly)
-	const result = items.map((item) => ({
+	const result = items.map((item: any) => ({
 		id: item.id,
 		stepInstanceId: item.id,
 		workflowInstanceId: item.workflow_instance_id,

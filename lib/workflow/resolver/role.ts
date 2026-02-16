@@ -16,5 +16,5 @@ export async function resolveRole(roleCode: string): Promise<string[]> {
 		throw new Error(`No users found for role ${roleCode}`);
 	}
 
-	return users.map((u) => u.id);
+	return users.map((u: any) => u.id);
 }

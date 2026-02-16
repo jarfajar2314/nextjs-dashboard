@@ -1,10 +1,11 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { hasPermission } from "@/lib/rbac";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
 	req: Request,
-	props: { params: Promise<{ instanceId: string }> }
+	props: { params: Promise<{ instanceId: string }> },
 ) {
 	const params = await props.params;
 	const canRead = await hasPermission("read", "workflow_history");
@@ -28,14 +29,14 @@ export async function GET(
 		},
 	});
 
-	const actorIds = Array.from(new Set(history.map((h) => h.actor_id)));
-	const actors = await prisma.user.findMany({
+	const actorIds = Array.from(new Set(history.map((h: any) => h.actor_id)));
+	const actors = (await prisma.user.findMany({
 		where: { id: { in: actorIds } },
 		select: { id: true, name: true, email: true },
-	});
+	})) as any[];
 	const actorMap = new Map(actors.map((a) => [a.id, a]));
 
-	const formattedHistory = history.map((log) => ({
+	const formattedHistory = history.map((log: any) => ({
 		id: log.id,
 		workflowTitle: log.workflow_instance.workflow.name,
 		action: log.action,

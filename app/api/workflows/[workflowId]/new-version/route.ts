@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 export async function POST(
 	request: Request,
-	{ params }: { params: Promise<{ workflowId: string }> }
+	{ params }: { params: Promise<{ workflowId: string }> },
 ) {
 	try {
 		const session = await auth.api.getSession({
@@ -18,54 +19,56 @@ export async function POST(
 
 		const { workflowId } = await params;
 
-		const result = await prisma.$transaction(async (tx) => {
-			const source = await tx.workflow.findUnique({
-				where: { id: workflowId },
-				include: { workflow_step: true },
-			});
+		const result = await prisma.$transaction(
+			async (tx: Prisma.TransactionClient) => {
+				const source = await tx.workflow.findUnique({
+					where: { id: workflowId },
+					include: { workflow_step: true },
+				});
 
-			if (!source) {
-				throw new Error("Source workflow not found");
-			}
+				if (!source) {
+					throw new Error("Source workflow not found");
+				}
 
-			const maxVersion = await tx.workflow.aggregate({
-				where: { code: source.code },
-				_max: { version: true },
-			});
+				const maxVersion = await tx.workflow.aggregate({
+					where: { code: source.code },
+					_max: { version: true },
+				});
 
-			const newVersion = (maxVersion._max.version ?? 0) + 1;
+				const newVersion = (maxVersion._max.version ?? 0) + 1;
 
-			const newWorkflow = await tx.workflow.create({
-				data: {
-					code: source.code,
-					name: source.name,
-					description: source.description,
-					version: newVersion,
-					is_active: false,
-					created_by: session.user.id,
-				},
-			});
-
-			for (const step of source.workflow_step) {
-				await tx.workflow_step.create({
+				const newWorkflow = await tx.workflow.create({
 					data: {
-						workflow_id: newWorkflow.id,
-						step_key: step.step_key,
-						step_order: step.step_order,
-						name: step.name,
-						approver_strategy: step.approver_strategy,
-						approver_value: step.approver_value,
-						approval_mode: step.approval_mode,
-						can_send_back: step.can_send_back,
-						reject_target_type: step.reject_target_type,
-						reject_target_step_id: null, // remap later if needed
-						is_terminal: step.is_terminal,
+						code: source.code,
+						name: source.name,
+						description: source.description,
+						version: newVersion,
+						is_active: false,
+						created_by: session.user.id,
 					},
 				});
-			}
 
-			return newWorkflow;
-		});
+				for (const step of source.workflow_step) {
+					await tx.workflow_step.create({
+						data: {
+							workflow_id: newWorkflow.id,
+							step_key: step.step_key,
+							step_order: step.step_order,
+							name: step.name,
+							approver_strategy: step.approver_strategy,
+							approver_value: step.approver_value,
+							approval_mode: step.approval_mode,
+							can_send_back: step.can_send_back,
+							reject_target_type: step.reject_target_type,
+							reject_target_step_id: null, // remap later if needed
+							is_terminal: step.is_terminal,
+						},
+					});
+				}
+
+				return newWorkflow;
+			},
+		);
 
 		return NextResponse.json(result);
 	} catch (error) {

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { resolveApprovers } from "@/lib/workflow/resolver";
+import { Prisma } from "@prisma/client";
 
 export async function GET(req: Request) {
 	const session = await auth.api.getSession({
@@ -32,8 +33,10 @@ export async function GET(req: Request) {
 		},
 	});
 
-	const userIds = Array.from(new Set(instances.map((i) => i.created_by)));
-	const users = await prisma.user.findMany({
+	const userIds = Array.from(
+		new Set(instances.map((i: any) => i.created_by)),
+	);
+	const users = (await prisma.user.findMany({
 		where: {
 			id: {
 				in: userIds,
@@ -45,11 +48,11 @@ export async function GET(req: Request) {
 			email: true,
 			image: true,
 		},
-	});
+	})) as any[];
 
 	const userMap = new Map(users.map((u) => [u.id, u]));
 
-	const formattedInstances = instances.map((instance) => ({
+	const formattedInstances = instances.map((instance: any) => ({
 		id: instance.id,
 		title: instance.workflow.name,
 		status: instance.status === "IN_PROGRESS" ? "PENDING" : instance.status,
@@ -80,7 +83,7 @@ export async function POST(req: Request) {
 		return new NextResponse("Invalid payload", { status: 400 });
 	}
 
-	return prisma.$transaction(async (tx) => {
+	return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		// 2️⃣ Resolve active workflow
 		const workflow = await tx.workflow.findFirst({
 			where: {
@@ -109,13 +112,13 @@ export async function POST(req: Request) {
 		if (existing) {
 			return new NextResponse(
 				"Workflow already exists for this reference",
-				{ status: 409 }
+				{ status: 409 },
 			);
 		}
 
 		// 4️⃣ Identify SUBMIT step
 		const submitStep = workflow.workflow_step.find(
-			(s) => s.step_key === "SUBMIT"
+			(s: any) => s.step_key === "SUBMIT",
 		);
 
 		if (!submitStep) {
@@ -160,7 +163,7 @@ export async function POST(req: Request) {
 
 		// 8️⃣ Resolve first approval step
 		const firstApprovalStep = workflow.workflow_step.find(
-			(s) => s.step_order > submitStep.step_order
+			(s: any) => s.step_order > submitStep.step_order,
 		);
 
 		if (!firstApprovalStep) {

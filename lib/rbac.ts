@@ -16,11 +16,11 @@ async function getUserRolesAndPermissions(userId: string) {
 
 	if (!user) return { roles: [], permissions: [] };
 
-	const roles = user.roles.map((r) => r.name);
+	const roles = user.roles.map((r: any) => r.name);
 	const permissions = new Set(
-		user.roles.flatMap((r) =>
-			r.permissions.map((p) => `${p.action}:${p.resource}`)
-		)
+		user.roles.flatMap((r: any) =>
+			r.permissions.map((p: any) => `${p.action}:${p.resource}`),
+		),
 	);
 
 	return { roles, permissions: Array.from(permissions) };
@@ -34,7 +34,7 @@ export async function hasPermission(action: string, resource: string) {
 	if (!session) return false;
 
 	const { roles, permissions } = await getUserRolesAndPermissions(
-		session.user.id
+		session.user.id,
 	);
 
 	// Superadmin bypass
