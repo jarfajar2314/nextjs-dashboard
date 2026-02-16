@@ -6,7 +6,7 @@
 		"dev": "next dev -p 3002 -H 0.0.0.0",
 		"build": "next build",
 		"start": "next start -p 3002",
-		"lint": "eslint"
+		"lint": "next lint ."
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.2.2",
@@ -51,7 +51,7 @@
 		"baseline-browser-mapping": "^2.9.19",
 		"dotenv": "^17.2.3",
 		"eslint": "^9",
-		"eslint-config-next": "16.0.6",
+		"eslint-config-next": "^16.1.6",
 		"prisma": "^6.19.0",
 		"tailwindcss": "^4",
 		"tsx": "^4.21.0",

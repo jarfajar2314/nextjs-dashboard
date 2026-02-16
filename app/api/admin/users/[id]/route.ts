@@ -4,7 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 
 export async function PUT(
 	req: Request,
-	{ params }: { params: Promise<{ id: string }> }
+	{ params }: { params: Promise<{ id: string }> },
 ) {
 	const { id } = await params;
 
@@ -28,7 +28,7 @@ export async function PUT(
 				where: { id },
 				data: {
 					roles: {
-						set: dbRoles.map((r) => ({ id: r.id })),
+						set: dbRoles.map((r: { id: string }) => ({ id: r.id })),
 					},
 				},
 			});
@@ -46,7 +46,7 @@ export async function PUT(
 
 		return NextResponse.json(
 			{ error: "Invalid request body" },
-			{ status: 400 }
+			{ status: 400 },
 		);
 	} catch (error) {
 		console.error("Failed to update user", error);
@@ -56,7 +56,7 @@ export async function PUT(
 
 export async function DELETE(
 	req: Request,
-	{ params }: { params: Promise<{ id: string }> }
+	{ params }: { params: Promise<{ id: string }> },
 ) {
 	const { id } = await params;
 	const canManage = await hasPermission("manage", "users");
