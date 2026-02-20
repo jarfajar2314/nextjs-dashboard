@@ -36,6 +36,7 @@ interface TaskQuickCreateModalProps {
 	resourceName?: string;
 	startAt?: string; // ISO string from DayPilot
 	endAt?: string; // ISO string from DayPilot
+	view?: string; // To conditionally display time and end date
 }
 
 export function TaskQuickCreateModal({
@@ -46,6 +47,7 @@ export function TaskQuickCreateModal({
 	resourceName,
 	startAt,
 	endAt,
+	view,
 }: TaskQuickCreateModalProps) {
 	const [statusId, setStatusId] = useState<string>("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,14 +95,22 @@ export function TaskQuickCreateModal({
 
 		setIsSubmitting(true);
 		try {
+			let finalEndAt = endAt;
+			if (endAt && view && view !== "Day") {
+				const endObj = new Date(endAt.replace("Z", ""));
+				endObj.setDate(endObj.getDate() - 1);
+				finalEndAt = format(endObj, "yyyy-MM-dd'T'HH:mm:ss") + ".000Z";
+			}
+
 			const payload = {
 				...data,
 				statusId,
 				resourceId,
 				startAt,
-				endAt,
+				endAt: finalEndAt,
 				type: "TASK",
 				priority: "MEDIUM",
+				allDay: true,
 			};
 
 			const response = await fetch("/api/tasks", {
@@ -129,16 +139,24 @@ export function TaskQuickCreateModal({
 
 	let formattedStart = "";
 	let formattedEnd = "";
-	if (startAt)
+	const isAllDayLike = view && view !== "Day";
+
+	if (startAt) {
+		const startObj = new Date(startAt.replace("Z", ""));
 		formattedStart = format(
-			new Date(startAt.replace("Z", "")),
-			"MMM d, yyyy h:mm a",
+			startObj,
+			isAllDayLike ? "MMM d, yyyy" : "MMM d, yyyy h:mm a",
 		);
-	if (endAt)
-		formattedEnd = format(
-			new Date(endAt.replace("Z", "")),
-			"MMM d, yyyy h:mm a",
-		);
+	}
+	if (endAt) {
+		const endObj = new Date(endAt.replace("Z", ""));
+		if (isAllDayLike) {
+			endObj.setDate(endObj.getDate() - 1);
+			formattedEnd = format(endObj, "MMM d, yyyy");
+		} else {
+			formattedEnd = format(endObj, "MMM d, yyyy h:mm a");
+		}
+	}
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>

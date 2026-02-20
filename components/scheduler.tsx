@@ -4,14 +4,20 @@ import React, { useEffect, useState } from "react";
 import { ActivityDetailsModal } from "@/app/(dashboard)/schedule/task-detail-modal";
 import { TaskQuickCreateModal } from "@/app/(dashboard)/schedule/task-quickcreate-modal";
 import { DayPilot, DayPilotScheduler } from "@daypilot/daypilot-lite-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
 	ChevronLeft,
 	ChevronRight,
 	Calendar as CalendarIcon,
+	Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { calculateDayPilotNewDate, formatDayPilotDate } from "@/lib/utils";
+import {
+	calculateDayPilotNewDate,
+	formatDayPilotDate,
+} from "@/lib/daypilot-utils";
+import { ScheduleNavigation } from "@/components/schedule-navigation";
 
 const Scheduler: React.FC = () => {
 	const [scheduler, setScheduler] = useState<DayPilot.Scheduler>();
@@ -27,6 +33,8 @@ const Scheduler: React.FC = () => {
 		new DayPilot.Date().firstDayOfMonth(),
 	);
 	const [refreshKey, setRefreshKey] = useState(0);
+	const [resourceType, setResourceType] = useState<string>("ROOM");
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [selectedActivity, setSelectedActivity] = useState<any>(null);
@@ -241,62 +249,62 @@ const Scheduler: React.FC = () => {
 	};
 
 	useEffect(() => {
-		const loadResources = async () => {
+		const loadData = async () => {
+			setIsLoading(true);
 			try {
-				const res = await fetch("/api/schedule/resources");
-				const json = await res.json();
-				if (json.ok) {
-					setResources(
-						json.data.map((r: any) => ({
+				// 1. Fetch resources
+				const resResources = await fetch(
+					`/api/schedule/resources?type=${resourceType}`,
+				);
+				let newResources: any[] = [];
+				if (resResources.ok) {
+					const jsonRes = await resResources.json();
+					if (jsonRes.ok) {
+						newResources = jsonRes.data.map((r: any) => ({
 							name: r.name,
 							id: r.id,
-						})),
-					);
+						}));
+						setResources(newResources);
+					}
 				}
-			} catch (error) {
-				console.error("Failed to fetch resources", error);
-			}
-		};
 
-		loadResources();
-	}, []);
+				// 2. Fetch events
+				let days = 0;
+				switch (view) {
+					case "Day":
+						days = 1;
+						break;
+					case "Week":
+						days = 7;
+						break;
+					case "Month":
+						days = startDate.daysInMonth();
+						break;
+					case "Year":
+						days = startDate.daysInYear();
+						break;
+				}
+				const start = startDate.toString("yyyy-MM-dd");
+				const end = startDate.addDays(days).toString("yyyy-MM-dd");
 
-	useEffect(() => {
-		const loadEvents = async () => {
-			let days = 0;
-			switch (view) {
-				case "Day":
-					days = 1;
-					break;
-				case "Week":
-					days = 7;
-					break;
-				case "Month":
-					days = startDate.daysInMonth();
-					break;
-				case "Year":
-					days = startDate.daysInYear();
-					break;
-			}
-			// DayPilot.Date.toString(pattern)
-			const start = startDate.toString("yyyy-MM-dd");
-			const end = startDate.addDays(days).toString("yyyy-MM-dd");
-
-			try {
-				const res = await fetch(
-					`/api/schedule/events?start=${start}&end=${end}`,
+				const resEvents = await fetch(
+					`/api/schedule/events?start=${start}&end=${end}&type=${resourceType}`,
 				);
-				const json = await res.json();
-				if (json.ok) {
-					setEvents(json.data);
+				if (resEvents.ok) {
+					const jsonEvt = await resEvents.json();
+					if (jsonEvt.ok) {
+						setEvents(jsonEvt.data);
+					}
 				}
 			} catch (error) {
-				console.error("Failed to fetch events", error);
+				console.error("Failed to fetch schedule data", error);
+			} finally {
+				setIsLoading(false);
 			}
 		};
 
-		loadEvents();
-	}, [startDate, view, refreshKey]);
+		loadData();
+	}, [startDate, view, refreshKey, resourceType]);
 
 	// Dynamic props for Scheduler
 	const getSchedulerProps = () => {
@@ -356,57 +364,21 @@ const Scheduler: React.FC = () => {
 
 	return (
 		<div className="flex flex-col h-full gap-4">
-			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-2 rounded-lg border shadow-sm">
-				<div className="flex items-center gap-2">
-					<div className="flex items-center bg-gray-100 rounded-lg p-1">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => handleNavigate("prev")}
-						>
-							<ChevronLeft className="h-4 w-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							onClick={() => handleNavigate("today")}
-							className="px-3 text-sm font-medium"
-						>
-							Today
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => handleNavigate("next")}
-						>
-							<ChevronRight className="h-4 w-4" />
-						</Button>
-					</div>
-					<div className="font-medium text-lg ml-2">
-						{/* Display logic for current date range could go here, e.g. "November 2026" */}
-						{view === "Day" && startDate.toString("MMMM d, yyyy")}
-						{view === "Week" &&
-							`${startDate.toString("MMMM d")} - ${startDate.addDays(6).toString("MMMM d, yyyy")}`}
-						{view === "Month" && startDate.toString("MMMM yyyy")}
-						{view === "Year" && startDate.toString("yyyy")}
-					</div>
-				</div>
+			<ScheduleNavigation
+				view={view}
+				handleViewChange={handleViewChange}
+				handleNavigate={handleNavigate}
+				startDate={startDate}
+				resourceType={resourceType}
+				setResourceType={setResourceType}
+			/>
 
-				<div className="flex items-center bg-gray-100 rounded-lg p-1">
-					{(["Day", "Week", "Month", "Year"] as const).map((v) => (
-						<Button
-							key={v}
-							variant={view === v ? "default" : "ghost"}
-							size="sm"
-							onClick={() => handleViewChange(v)}
-							className={view === v ? "shadow-sm" : ""}
-						>
-							{v}
-						</Button>
-					))}
-				</div>
-			</div>
-
-			<div className="flex-1 border overflow-hidden">
+			<div className="flex-1 border overflow-hidden relative min-h-[400px]">
+				{isLoading && (
+					<div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+						<Loader2 className="h-10 w-10 animate-spin text-primary" />
+					</div>
+				)}
 				<DayPilotScheduler
 					controlRef={setScheduler}
 					startDate={startDate}
@@ -444,6 +416,7 @@ const Scheduler: React.FC = () => {
 				resourceName={quickCreateData?.resourceName}
 				startAt={quickCreateData?.startAt}
 				endAt={quickCreateData?.endAt}
+				view={view}
 			/>
 		</div>
 	);

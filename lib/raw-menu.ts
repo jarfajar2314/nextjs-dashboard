@@ -12,6 +12,7 @@ import {
 	HelpCircle,
 	FileText,
 	Calendar,
+	Server,
 } from "lucide-react";
 
 export type MenuItem = {
@@ -32,17 +33,24 @@ export const rawMenu: MenuItem[] = [
 		icon: LayoutDashboard,
 		permissions: [{ resource: "dashboard", action: "read" }],
 	},
-	{
-		name: "Proposals",
-		href: "/proposals",
-		icon: FileText,
-		permissions: [{ resource: "proposals", action: "read" }],
-	},
+
 	{
 		name: "Schedule",
 		href: "/schedule",
 		icon: Calendar,
 		permissions: [{ resource: "schedules", action: "read" }],
+	},
+	{
+		name: "Resources",
+		href: "/resources",
+		icon: Server,
+		permissions: [{ resource: "resources", action: "read" }],
+	},
+	{
+		name: "Proposals",
+		href: "/proposals",
+		icon: FileText,
+		permissions: [{ resource: "proposals", action: "read" }],
 	},
 	{
 		name: "Admin",
