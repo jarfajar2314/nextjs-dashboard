@@ -41,6 +41,8 @@ interface ScheduleNavigationProps {
 	setUseInitials: (v: boolean) => void;
 	selectedDivisions: string[];
 	setSelectedDivisions: (divs: string[]) => void;
+	clipboard?: any;
+	onCancelCopy?: () => void;
 }
 
 export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
@@ -55,6 +57,8 @@ export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
 	setUseInitials,
 	selectedDivisions,
 	setSelectedDivisions,
+	clipboard,
+	onCancelCopy,
 }) => {
 	const [divisions, setDivisions] = useState<
 		{ code: string; name: string }[]
@@ -216,12 +220,38 @@ export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
 				{/* Desktop Filter */}
 				{resourceType === "PEOPLE" &&
 					renderFilterMenu("hidden sm:flex shrink-0 h-9 ml-2 px-3")}
+
+				{/* Cancel Copy */}
+				{clipboard && (
+					<Button
+						variant="destructive"
+						size="sm"
+						onClick={onCancelCopy}
+						className="hidden sm:flex ml-2 h-9 px-3"
+					>
+						Cancel Copy
+					</Button>
+				)}
 			</div>
 
 			{/* Mobile Filter: shows above type tabs */}
 			{resourceType === "PEOPLE" && (
 				<div className="flex w-full sm:hidden">
 					{renderFilterMenu("flex w-full justify-center h-9")}
+				</div>
+			)}
+
+			{/* Mobile Cancel Copy */}
+			{clipboard && (
+				<div className="flex w-full sm:hidden">
+					<Button
+						variant="destructive"
+						size="sm"
+						onClick={onCancelCopy}
+						className="flex w-full justify-center h-9"
+					>
+						Cancel Copy
+					</Button>
 				</div>
 			)}
 

@@ -33,6 +33,7 @@ import {
 	Edit,
 	Trash2,
 	Layers,
+	Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -60,6 +61,7 @@ interface TaskDetailModalProps {
 	activity: any; // Summary task from Gantt/Calendar
 	onEdit: () => void;
 	onUpdate?: () => void; // Refresh parent
+	onCopy?: (task: any) => void;
 }
 
 const COLORS = [
@@ -79,6 +81,7 @@ export function ActivityDetailsModal({
 	activity,
 	onEdit,
 	onUpdate,
+	onCopy,
 }: TaskDetailModalProps) {
 	const [fullTask, setFullTask] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
@@ -421,6 +424,19 @@ export function ActivityDetailsModal({
 								</>
 							) : (
 								<>
+									{onCopy && (
+										<Button
+											variant="outline"
+											size="sm"
+											className="h-8"
+											onClick={() => {
+												onCopy(task);
+												onClose();
+											}}
+										>
+											<Copy className="h-3.5 w-3.5" />
+										</Button>
+									)}
 									<Button
 										variant="outline"
 										size="sm"

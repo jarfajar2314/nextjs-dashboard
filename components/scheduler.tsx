@@ -3,92 +3,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ActivityDetailsModal } from "@/app/(dashboard)/schedule/task-detail-modal";
 import { TaskQuickCreateModal } from "@/app/(dashboard)/schedule/task-quickcreate-modal";
+import { ConfirmationDialog } from "@/components/confirmation-dialog";
 import { DayPilot, DayPilotScheduler } from "@daypilot/daypilot-lite-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-	ChevronLeft,
-	ChevronRight,
-	Calendar as CalendarIcon,
-	Loader2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
 	calculateDayPilotNewDate,
 	formatDayPilotDate,
+	getSchedulerProps,
+	renderPeopleRowHeader,
 } from "@/lib/daypilot-utils";
 import { ScheduleNavigation } from "@/components/schedule-navigation";
-
-const renderPeopleRowHeader = (row: any, useInitials: boolean) => {
-	let displayName = row.name;
-	if (useInitials) {
-		const profileInitials = row.data.tags?.initials;
-		if (profileInitials) {
-			displayName = profileInitials;
-		} else {
-			displayName = row.name
-				.split(" ")
-				.filter(Boolean)
-				.map((n: string) => n.charAt(0))
-				.join("")
-				.toUpperCase()
-				.substring(0, 3);
-		}
-	}
-
-	let tagsHtml = "";
-	const tagData = row.data.tags;
-	if (tagData) {
-		let displayText = "";
-		let bgColor = "#f3f4f6";
-		let fontColor = "#4b5563";
-		let borderColor = "#e5e7eb";
-
-		if (tagData.divisionCode || tagData.division) {
-			displayText = tagData.divisionCode || tagData.division;
-			if (tagData.divisionColor) {
-				bgColor = tagData.divisionColor;
-				fontColor = "#ffffff";
-				borderColor = tagData.divisionColor;
-			}
-		} else if (tagData.position) {
-			displayText = tagData.position;
-		}
-
-		if (displayText) {
-			const maxLen = useInitials ? 5 : 8;
-			const truncated =
-				displayText.length > maxLen
-					? displayText.substring(0, maxLen) + "..."
-					: displayText;
-
-			tagsHtml =
-				'<div style="margin-top: 4px; width: 100%; display: flex; justify-content: ' +
-				(useInitials ? "center" : "flex-start") +
-				';"><span style="background-color: ' +
-				bgColor +
-				"; color: " +
-				fontColor +
-				"; font-size: " +
-				(useInitials ? "9px" : "10px") +
-				"; padding: 2px 4px; border-radius: 4px; border: 1px solid " +
-				borderColor +
-				'; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" title="' +
-				displayText +
-				'">' +
-				truncated +
-				"</span></div>";
-		}
-	}
-
-	return `
-		<div style="display: flex; flex-direction: column; padding: 4px ${useInitials ? "2px" : "8px"}; justify-content: center; height: 100%; align-items: ${useInitials ? "center" : "flex-start"}; overflow: hidden; box-sizing: border-box;">
-			<div style="font-weight: 500; font-size: ${useInitials ? "15px" : "13px"}; line-height: 1.2; word-break: break-word; text-align: ${useInitials ? "center" : "left"}; width: 100%;">${displayName}</div>
-			${tagsHtml}
-		</div>
-	`;
-};
-
 const Scheduler: React.FC = () => {
 	const [scheduler, setScheduler] = useState<DayPilot.Scheduler>();
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -111,6 +36,19 @@ const Scheduler: React.FC = () => {
 
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [selectedActivity, setSelectedActivity] = useState<any>(null);
+
+	const [clipboard, setClipboard] = useState<{
+		taskId: string;
+		durationMin: number;
+		text: string;
+		allDay?: boolean;
+	} | null>(null);
+
+	const [isConfirmCopyOpen, setIsConfirmCopyOpen] = useState(false);
+	const [pendingCopyArgs, setPendingCopyArgs] = useState<{
+		startAt: string;
+		targetResourceId: string;
+	} | null>(null);
 
 	const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
 	const [quickCreateData, setQuickCreateData] = useState<{
@@ -232,7 +170,6 @@ const Scheduler: React.FC = () => {
 
 	const onEventMoved = async (args: DayPilot.SchedulerEventMovedArgs) => {
 		try {
-			console.log("args", args);
 			const startAt = calculateDayPilotNewDate(
 				view,
 				args.newStart,
@@ -278,7 +215,6 @@ const Scheduler: React.FC = () => {
 
 	const onEventResized = async (args: DayPilot.SchedulerEventResizedArgs) => {
 		try {
-			console.log("args", args);
 			const payload: any = {};
 
 			if (args.what === "start") {
@@ -368,18 +304,33 @@ const Scheduler: React.FC = () => {
 		args.data.toolTip = `${args.data.text} - ${timeStr}`;
 
 		args.data.areas = [
-			// {
-			// 	top: 14,
-			// 	right: 4,
-			// 	width: 20,
-			// 	height: 20,
-			// 	symbol: "/icons/daypilot.svg#trash",
-			// 	fontColor: "#999999",
-			// 	onClick: (args) => {
-			// 		const e = args.source;
-			// 		scheduler?.events.remove(e);
-			// 	},
-			// },
+			{
+				right: 4,
+				top: 4,
+				width: 24,
+				height: 24,
+				cssClass: "copy-btn-area",
+				style: "display: flex; align-items: center; justify-content: center; background: white; border-radius: 4px; cursor: pointer; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);",
+				html: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-600"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+				visibility: "Hover",
+				action: "None",
+				onClick: (clickArgs: any) => {
+					const e = clickArgs.source;
+					const startDP = new DayPilot.Date(e.data.start as string);
+					const endDP = new DayPilot.Date(e.data.end as string);
+					const durationMs = endDP.getTime() - startDP.getTime();
+					const durationMin = Math.round(durationMs / 60000);
+
+					setClipboard({
+						taskId: e.data.taskId,
+						durationMin,
+						text: e.text(),
+						allDay: e.data.tags?.allDay,
+					});
+					console.log("clipboard", clipboard);
+					toast.success(`Copied task: ${e.text()}`);
+				},
+			},
 		];
 	};
 
@@ -391,6 +342,46 @@ const Scheduler: React.FC = () => {
 		}
 	};
 
+	const onBeforeTimeHeaderRender = (
+		args: DayPilot.SchedulerBeforeTimeHeaderRenderArgs,
+	) => {
+		const now = new DayPilot.Date();
+		if (view === "Day") {
+			if (
+				args.header.start.getTime() <= now.getTime() &&
+				now.getTime() <
+					(args.header.end?.getTime() ??
+						args.header.start.addHours(1).getTime())
+			) {
+				args.header.backColor = "#e0f2fe"; // Light blue
+			}
+		} else {
+			const today = now.getDatePart();
+			if (args.header.start.getDatePart().getTime() === today.getTime()) {
+				args.header.backColor = "#e0f2fe"; // Light blue
+			}
+		}
+	};
+
+	const onBeforeCellRender = (
+		args: DayPilot.SchedulerBeforeCellRenderArgs,
+	) => {
+		const now = new DayPilot.Date();
+		if (view === "Day") {
+			if (
+				args.cell.start.getTime() <= now.getTime() &&
+				now.getTime() < args.cell.end.getTime()
+			) {
+				args.cell.properties.backColor = "#f0f9ff"; // Lighter blue
+			}
+		} else {
+			const today = now.getDatePart();
+			if (args.cell.start.getDatePart().getTime() === today.getTime()) {
+				args.cell.properties.backColor = "#f0f9ff"; // Lighter blue
+			}
+		}
+	};
+
 	const onTimeRangeSelected = async (
 		args: DayPilot.SchedulerTimeRangeSelectedArgs,
 	) => {
@@ -399,6 +390,16 @@ const Scheduler: React.FC = () => {
 		const resourceName = resources.find(
 			(r) => r.id === args.resource,
 		)?.name;
+
+		if (clipboard) {
+			setPendingCopyArgs({
+				startAt: formatDayPilotDate(args.start),
+				targetResourceId: String(args.resource),
+			});
+			setIsConfirmCopyOpen(true);
+			return;
+		}
+
 		setQuickCreateData({
 			startAt: formatDayPilotDate(args.start),
 			endAt: formatDayPilotDate(args.end),
@@ -410,13 +411,75 @@ const Scheduler: React.FC = () => {
 		console.log("Time range selected", args);
 	};
 
+	const handleConfirmCopy = async () => {
+		if (!clipboard || !pendingCopyArgs) return;
+
+		setIsLoading(true);
+		try {
+			const res = await fetch(
+				`/api/tasks/${clipboard.taskId}/duplicate`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						startAt: pendingCopyArgs.startAt,
+						targetResourceId: pendingCopyArgs.targetResourceId,
+						resourceMode: "REPLACE",
+						durationMin: clipboard.durationMin,
+					}),
+				},
+			);
+
+			if (!res.ok) {
+				throw new Error("Failed to duplicate task");
+			}
+
+			toast.success(`Task duplicated: ${clipboard.text}`);
+			setRefreshKey((prev) => prev + 1);
+			setClipboard(null);
+		} catch (error) {
+			console.error("Error duplicating task", error);
+			toast.error("Failed to duplicate task");
+		} finally {
+			setIsLoading(false);
+			setIsConfirmCopyOpen(false);
+			setPendingCopyArgs(null);
+		}
+	};
+
 	const onEventClicked = async (args: DayPilot.SchedulerEventClickedArgs) => {
 		setSelectedActivity({
 			id: args.e.data.taskId,
 			title: args.e.text(),
+			startDate: args.e.start().toString(),
+			endDate: args.e.end().toString(),
+			allDay: args.e.data.tags?.allDay,
 			// Add more properties if needed by the modal to fetch details or display initial info
 		});
 		setIsModalVisible(true);
+	};
+
+	const handleCopyFromModal = (taskEntity: any) => {
+		const startDate = taskEntity.startAt || taskEntity.startDate;
+		const endDate = taskEntity.endAt || taskEntity.endDate;
+
+		if (!startDate || !endDate) {
+			toast.error("Cannot copy task without start and end dates.");
+			return;
+		}
+
+		const startDP = new DayPilot.Date(startDate as string);
+		const endDP = new DayPilot.Date(endDate as string);
+		const durationMs = endDP.getTime() - startDP.getTime();
+		const durationMin = Math.round(durationMs / 60000);
+
+		setClipboard({
+			taskId: taskEntity.id,
+			durationMin,
+			text: taskEntity.title,
+			allDay: taskEntity.allDay || taskEntity.isFullDay,
+		});
+		toast.success(`Copied task: ${taskEntity.title}`);
 	};
 
 	useEffect(() => {
@@ -454,21 +517,7 @@ const Scheduler: React.FC = () => {
 				}
 
 				// 2. Fetch events
-				let days = 0;
-				switch (view) {
-					case "Day":
-						days = 1;
-						break;
-					case "Week":
-						days = 7;
-						break;
-					case "Month":
-						days = startDate.daysInMonth();
-						break;
-					case "Year":
-						days = startDate.daysInYear();
-						break;
-				}
+				let days = fetchDays();
 				const start = startDate.toString("yyyy-MM-dd");
 				const end = startDate.addDays(days).toString("yyyy-MM-dd");
 
@@ -503,11 +552,6 @@ const Scheduler: React.FC = () => {
 	useEffect(() => {
 		if (!wrapperRef.current) return;
 
-		console.log(
-			"height",
-			wrapperRef.current.getBoundingClientRect().height,
-		);
-
 		// Initial height
 		setSchedulerHeight(wrapperRef.current.getBoundingClientRect().height);
 
@@ -521,61 +565,7 @@ const Scheduler: React.FC = () => {
 		return () => observer.disconnect();
 	}, []);
 
-	// Dynamic props for Scheduler
-	const getSchedulerProps = () => {
-		let days = 30;
-		let scale: "Day" | "Hour" | "Week" | "Month" | "Year" | "Manual" =
-			"Day";
-		let timeHeaders: any[] = [
-			{ groupBy: "Month" },
-			{ groupBy: "Day", format: "d" },
-		];
-		let cellWidth = 50;
-		// Logic duplicated for props? better to use state `config` but let's derive related props
-
-		switch (view) {
-			case "Day":
-				days = 1;
-				scale = "Hour";
-				timeHeaders = [
-					{ groupBy: "Day", format: "dddd, d MMMM yyyy" },
-					{ groupBy: "Hour" },
-				];
-				cellWidth = 60;
-				break;
-			case "Week":
-				days = 7;
-				scale = "Day";
-				// Using Month/Day/DayOfWeek for context
-				timeHeaders = [
-					{ groupBy: "Month" },
-					{ groupBy: "Day", format: "ddd d" },
-				];
-				cellWidth = 100;
-				break;
-			case "Month":
-				days = startDate.daysInMonth();
-				scale = "Day";
-				timeHeaders = [
-					{ groupBy: "Month" },
-					{ groupBy: "Day", format: "d" },
-				];
-				cellWidth = 60;
-				break;
-			case "Year":
-				days = startDate.daysInYear();
-				scale = "Day";
-				timeHeaders = [
-					{ groupBy: "Month" },
-					{ groupBy: "Day", format: "d" },
-				];
-				cellWidth = 50;
-				break;
-		}
-		return { days, scale, timeHeaders, cellWidth };
-	};
-
-	const handleExport = (format: "json" | "xlsx") => {
+	const fetchDays = () => {
 		let days = 0;
 		switch (view) {
 			case "Day":
@@ -591,13 +581,18 @@ const Scheduler: React.FC = () => {
 				days = startDate.daysInYear();
 				break;
 		}
+		return days;
+	};
+
+	const handleExport = (format: "json" | "xlsx") => {
+		let days = fetchDays();
 		const start = startDate.toString("yyyy-MM-dd");
 		const end = startDate.addDays(days).toString("yyyy-MM-dd");
 		const url = `/api/schedule/events/export?start=${start}&end=${end}&type=${resourceType}&filetype=${format}`;
 		window.open(url, "_blank");
 	};
 
-	const schedulerProps = getSchedulerProps();
+	const schedulerProps = getSchedulerProps(view, startDate);
 
 	return (
 		<div className="flex flex-col h-full gap-4">
@@ -613,6 +608,8 @@ const Scheduler: React.FC = () => {
 				setUseInitials={setUseInitials}
 				selectedDivisions={selectedDivisions}
 				setSelectedDivisions={setSelectedDivisions}
+				clipboard={clipboard}
+				onCancelCopy={() => setClipboard(null)}
 			/>
 
 			<div
@@ -648,6 +645,8 @@ const Scheduler: React.FC = () => {
 						onEventClicked={onEventClicked}
 						onBeforeEventRender={onBeforeEventRender}
 						onBeforeRowHeaderRender={onBeforeRowHeaderRender}
+						onBeforeTimeHeaderRender={onBeforeTimeHeaderRender}
+						onBeforeCellRender={onBeforeCellRender}
 						durationBarVisible={false}
 						rowHeaderWidth={useInitials ? 60 : 150}
 					/>
@@ -660,6 +659,7 @@ const Scheduler: React.FC = () => {
 				activity={selectedActivity}
 				onEdit={() => {}}
 				onUpdate={() => setRefreshKey((prev) => prev + 1)}
+				onCopy={handleCopyFromModal}
 			/>
 
 			<TaskQuickCreateModal
@@ -688,6 +688,16 @@ const Scheduler: React.FC = () => {
 					</div>
 				</div>
 			)}
+
+			<ConfirmationDialog
+				open={isConfirmCopyOpen}
+				onOpenChange={setIsConfirmCopyOpen}
+				title="Confirm Schedule Duplication"
+				description={`Are you sure you want to copy the task "${clipboard?.text}" to this selected time slot?`}
+				confirmText="Copy Task"
+				onConfirm={handleConfirmCopy}
+				loading={isLoading}
+			/>
 		</div>
 	);
 };
