@@ -3,13 +3,47 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        container_name: next-dashboard-template
+        container_name: spc-dashboard
+        restart: unless-stopped
         ports:
-            - "3002:3002"
+            - "${PORT:-3002}:3002"
         environment:
-            DATABASE_URL: ""
-            BETTER_AUTH_SECRET: ""
-            BETTER_AUTH_URL: "http://localhost:3002"
-            MICROSOFT_CLIENT_ID: ""
-            MICROSOFT_CLIENT_SECRET: ""
-            MICROSOFT_TENANT_ID: ""
+            NODE_ENV: production
+            PORT: 3002
+            HOSTNAME: 0.0.0.0
+
+            DATABASE_URL: "postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-db_name}"
+
+            BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
+            BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL}
+
+            MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+            MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+            MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
+        command: sh -c "npx prisma migrate deploy && npm run start"
+        depends_on:
+            db:
+                condition: service_healthy
+
+    db:
+        image: postgres:16-alpine
+        container_name: spc-dashboard-db
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-user}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+            POSTGRES_DB: ${POSTGRES_DB:-db_name}
+        volumes:
+            - spc-dashboard-db:/var/lib/postgresql/data
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-db_name}",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+volumes:
+    spc-dashboard-db:
