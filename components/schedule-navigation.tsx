@@ -12,12 +12,14 @@ import {
 	Calendar,
 	Maximize2,
 	EyeOff,
+	List,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 const RESOURCE_TYPES = [
 	{ id: "PEOPLE", label: "People", icon: Users },
+	{ id: "TASK", label: "Tasks", icon: List },
 	{ id: "VEHICLE", label: "Vehicles", icon: Car },
 	{ id: "ROOM", label: "Rooms", icon: Building },
 	{ id: "TIMEOFF", label: "Time Off", icon: Calendar },

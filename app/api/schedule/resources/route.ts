@@ -16,6 +16,49 @@ export async function GET(req: Request) {
 			.flatMap((d) => d.split(","))
 			.filter(Boolean);
 
+		if (resourceTypeCode === "TASK") {
+			const startParam = searchParams.get("start");
+			const endParam = searchParams.get("end");
+			const startDate = startParam ? new Date(startParam) : null;
+			const endDate = endParam ? new Date(endParam) : null;
+
+			const taskWhere: any = {
+				status: { isActive: true },
+			};
+
+			if (startDate && endDate) {
+				taskWhere.AND = [
+					{ startAt: { lte: endDate } },
+					{ endAt: { gte: startDate } },
+				];
+			}
+
+			const tasks = await prisma.task.findMany({
+				where: taskWhere,
+				include: { status: true },
+				orderBy: { startAt: "asc" },
+			});
+
+			// Grouping: DayPilot likes unique IDs.
+			// User wants code if exists, else ID.
+			// If we group, we unique them.
+			const seen = new Set();
+			const taskResources = tasks
+				.map((t) => ({
+					id: t.code || t.id,
+					name: t.title,
+					color: t.color || "#3d85c6",
+					// Additional data for DayPilot
+				}))
+				.filter((tr) => {
+					if (seen.has(tr.id)) return false;
+					seen.add(tr.id);
+					return true;
+				});
+
+			return NextResponse.json({ ok: true, data: taskResources });
+		}
+
 		const where: any = {
 			isActive: true,
 		};
