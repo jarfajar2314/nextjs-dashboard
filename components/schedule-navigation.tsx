@@ -32,6 +32,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { useRequirePermission } from "@/hooks/use-require-permission";
 
 interface ScheduleNavigationProps {
 	view: "Day" | "Week" | "Month" | "Year";
@@ -71,6 +72,10 @@ export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
 	const [divisions, setDivisions] = useState<
 		{ code: string; name: string }[]
 	>([]);
+	const { isAuthorized: canManageResources } = useRequirePermission(
+		"manage",
+		"resources",
+	);
 
 	useEffect(() => {
 		if (resourceType === "PEOPLE") {
@@ -99,8 +104,8 @@ export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
 							size="sm"
 							className={className}
 						>
-							<Filter className="h-4 w-4 2xl:mr-2" />
-							<span className="hidden 2xl:inline truncate">
+							<Filter className="h-4 w-4" />
+							<span className="truncate inline xl:hidden">
 								Filter by Division
 							</span>
 							{selectedDivisions.length > 0 && (
@@ -191,22 +196,26 @@ export const ScheduleNavigation: React.FC<ScheduleNavigationProps> = ({
 						Simplify Navigation
 					</Button>
 
-					<div className="h-px bg-border my-1" />
+					{canManageResources && (
+						<>
+							<div className="h-px bg-border my-1" />
 
-					<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-						Admin
-					</div>
-					<Button
-						asChild
-						variant="ghost"
-						size="sm"
-						className="justify-start gap-2"
-					>
-						<Link href="/resources">
-							<Users className="h-3.5 w-3.5" />
-							Manage Resources
-						</Link>
-					</Button>
+							<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+								Admin
+							</div>
+							<Button
+								asChild
+								variant="ghost"
+								size="sm"
+								className="justify-start gap-2"
+							>
+								<Link href="/resources">
+									<Users className="h-3.5 w-3.5" />
+									Manage Resources
+								</Link>
+							</Button>
+						</>
+					)}
 				</div>
 			</PopoverContent>
 		</Popover>

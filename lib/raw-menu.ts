@@ -14,6 +14,7 @@ import {
 	Calendar,
 	Server,
 	ChartBarIncreasing,
+	ColumnsSettings,
 } from "lucide-react";
 
 export type MenuItem = {
@@ -81,6 +82,20 @@ export const rawMenu: MenuItem[] = [
 				href: "/admin/permissions",
 				icon: ShieldCheck,
 				permissions: [{ resource: "permissions", action: "read" }],
+			},
+		],
+	},
+	{
+		name: "Master Data",
+		href: "/master-data",
+		icon: ColumnsSettings,
+		permissions: [{ resource: "masterdata", action: "manage" }],
+		children: [
+			{
+				name: "Time Off Types",
+				href: "/master-data/timeoff-types",
+				icon: Calendar,
+				permissions: [{ resource: "masterdata", action: "manage" }],
 			},
 		],
 	},

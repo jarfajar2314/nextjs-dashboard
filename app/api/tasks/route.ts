@@ -204,6 +204,7 @@ export async function POST(req: Request) {
 						allDay: body.allDay ?? false,
 						timezone: body.timezone,
 						color: body.color,
+						code: body.code,
 						createdById: userId,
 					},
 				});
