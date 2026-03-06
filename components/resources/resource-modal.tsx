@@ -16,10 +16,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { UserSearchMultiSelect } from "@/components/user-search-multiselect";
 
+import { ColorPicker } from "@/components/color-picker";
+
 const formSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 	resourceTypeId: z.string().min(1, "Type is required"),
 	userId: z.string().optional(),
+	color: z.string().optional().nullable(),
 });
 
 interface ResourceModalProps {
@@ -47,6 +50,7 @@ export function ResourceModal({
 			name: resource?.name || "",
 			resourceTypeId: resourceType?.id || "",
 			userId: resource?.userId || "",
+			color: resource?.color || "",
 		},
 	});
 
@@ -57,6 +61,7 @@ export function ResourceModal({
 				name: resource?.name || "",
 				resourceTypeId: resourceType?.id || "",
 				userId: resource?.userId || "",
+				color: resource?.color || "",
 			});
 		}
 	}, [isOpen, resource, resourceType, form]);
@@ -75,6 +80,7 @@ export function ResourceModal({
 					name: values.name,
 					resourceTypeId: resourceType.id, // Always enforce the passed type id
 					userId: values.userId || null,
+					color: values.color || null,
 				}),
 			});
 			const json = await res.json();
@@ -171,6 +177,20 @@ export function ResourceModal({
 								{form.formState.errors.name.message}
 							</p>
 						)}
+					</div>
+
+					<div className="space-y-2">
+						<Label>Color Identity</Label>
+						<Controller
+							control={form.control}
+							name="color"
+							render={({ field }) => (
+								<ColorPicker
+									value={field.value || ""}
+									onChange={field.onChange}
+								/>
+							)}
+						/>
 					</div>
 
 					{/* Hidden input for resourceTypeId to keep it in form state seamlessly */}

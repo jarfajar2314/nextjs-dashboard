@@ -24,6 +24,20 @@ export function calculateDayPilotNewDate(
 	return formatDayPilotDate(newDateDP);
 }
 
+export const renderTaskRowHeader = (row: any) => {
+	const taskName = row.name;
+	const color = row.data?.tags?.color || "#3d85c6";
+
+	return `
+		<div style="display: flex; align-items: center; padding: 0 2px; height: 100%; overflow: hidden; box-sizing: border-box;">
+			<div style="width: 4px; height: 32px; border-radius: 999px; background-color: ${color}; flex-shrink: 0;"></div>
+			<div style="margin-left: 5px; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+				<div style="font-weight: 600; font-size: 13px; line-height: 1.3; color: #374151; word-break: break-word;">${taskName}</div>
+			</div>
+		</div>
+	`;
+};
+
 export const renderPeopleRowHeader = (row: any, useInitials: boolean) => {
 	let displayName = row.name;
 	if (useInitials) {
