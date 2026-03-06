@@ -23,6 +23,68 @@ export async function GET(req: Request) {
 			!isNaN(startDate.getTime()) &&
 			!isNaN(endDate.getTime());
 
+		if (resourceTypeCode === "TASK") {
+			const taskWhere: any = {
+				status: { isActive: true },
+			};
+
+			if (isValidRange) {
+				taskWhere.AND = [
+					{ startAt: { lte: endDate } },
+					{ endAt: { gte: startDate } },
+				];
+			}
+
+			// In this view, we want to see People on the Task rows
+			// Rows are tasks, Events are people (found in TaskResource)
+			const tasks = await prisma.task.findMany({
+				where: taskWhere,
+				include: {
+					resources: {
+						include: {
+							resource: {
+								include: {
+									resourceType: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			const events: any[] = [];
+			tasks.forEach((task) => {
+				const rowResourceId = task.code || task.id;
+				// Filter for resources that are PEOPLE
+				const peopleResources = task.resources.filter(
+					(tr) => tr.resource.resourceType.code === "PEOPLE",
+				);
+
+				peopleResources.forEach((tr) => {
+					events.push({
+						id: `${task.id}_${tr.resourceId}`,
+						taskId: task.id,
+						resourceId: rowResourceId,
+						text: tr.resource.name,
+						start: task.startAt?.toISOString() || "",
+						end: task.endAt?.toISOString() || "",
+						backColor: tr.resource.color || "#3d85c6",
+						fontColor: "#fff",
+						resource: rowResourceId,
+						bubbleHtml: `<strong>${tr.resource.name}</strong><br/>on ${task.title}`,
+						moveDisabled: true,
+						tags: {
+							allDay: task.allDay,
+							type: "TASK_ASSIGNMENT",
+							resourceId: tr.resourceId,
+						},
+					});
+				});
+			});
+
+			return NextResponse.json({ ok: true, data: events });
+		}
+
 		if (resourceTypeCode === "TIMEOFF") {
 			const where: any = {};
 

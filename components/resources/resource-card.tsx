@@ -22,13 +22,18 @@ export function ResourceCard({
 				<CardTitle className="text-sm font-medium">
 					{resource.name}
 				</CardTitle>
-				{typeCode === "ROOM" ? (
-					<Home className="h-4 w-4 text-muted-foreground" />
-				) : typeCode === "VEHICLE" ? (
-					<Car className="h-4 w-4 text-muted-foreground" />
-				) : (
-					<User className="h-4 w-4 text-muted-foreground" />
-				)}
+				<div
+					className="flex h-8 w-8 items-center justify-center rounded-full"
+					style={{ backgroundColor: resource.color || "#94a3b8" }}
+				>
+					{typeCode === "ROOM" ? (
+						<Home className="h-4 w-4 text-white" />
+					) : typeCode === "VEHICLE" ? (
+						<Car className="h-4 w-4 text-white" />
+					) : (
+						<User className="h-4 w-4 text-white" />
+					)}
+				</div>
 			</CardHeader>
 			<CardContent>
 				<p className="mt-2 text-sm text-muted-foreground line-clamp-2 min-h-10">

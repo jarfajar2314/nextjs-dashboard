@@ -15,6 +15,7 @@ import {
 	formatDayPilotDate,
 	getSchedulerProps,
 	renderPeopleRowHeader,
+	renderTaskRowHeader,
 } from "@/lib/daypilot-utils";
 import { ScheduleNavigation } from "@/components/schedule-navigation";
 const Scheduler: React.FC = () => {
@@ -196,6 +197,17 @@ const Scheduler: React.FC = () => {
 	};
 
 	const onEventMoved = async (args: DayPilot.SchedulerEventMovedArgs) => {
+		if (
+			resourceType === "TASK" &&
+			args.e.data.resourceId !== args.newResource
+		) {
+			toast.error(
+				"Reassigning resources via drag-and-drop is disabled in Task View.",
+			);
+			setRefreshKey((prev) => prev + 1);
+			return;
+		}
+
 		try {
 			const eventType = args.e.data.tags?.type || "TASK";
 			const startAt = calculateDayPilotNewDate(
@@ -382,6 +394,10 @@ const Scheduler: React.FC = () => {
 	) => {
 		if (resourceType === "PEOPLE" || resourceType === "TIMEOFF") {
 			args.row.html = renderPeopleRowHeader(args.row, useInitials);
+		}
+
+		if (resourceType === "TASK") {
+			args.row.html = renderTaskRowHeader(args.row);
 		}
 	};
 
@@ -581,13 +597,23 @@ const Scheduler: React.FC = () => {
 		const loadData = async () => {
 			setIsLoading(true);
 			try {
-				// 1. Fetch resources
+				// 1. Calculate time range (used for both resources and events)
+				let days = fetchDays();
+				const start = startDate.toString("yyyy-MM-dd");
+				const end = startDate.addDays(days).toString("yyyy-MM-dd");
+
+				// 2. Fetch resources
 				const resourceParams = new URLSearchParams({
 					type: resourceType,
 				});
 				selectedDivisions.forEach((div) =>
 					resourceParams.append("division", div),
 				);
+
+				if (resourceType === "TASK") {
+					resourceParams.append("start", start);
+					resourceParams.append("end", end);
+				}
 
 				const resResources = await fetch(
 					`/api/schedule/resources?${resourceParams.toString()}`,
@@ -596,26 +622,35 @@ const Scheduler: React.FC = () => {
 				if (resResources.ok) {
 					const jsonRes = await resResources.json();
 					if (jsonRes.ok) {
-						newResources = jsonRes.data.map((r: any) => ({
-							name: r.name,
-							id: r.id,
-							tags: {
-								division: r.user?.profile?.division?.name,
-								divisionCode: r.user?.profile?.division?.code,
-								divisionColor: r.user?.profile?.division?.color,
-								position: r.user?.profile?.position,
-								initials: r.user?.profile?.initials,
-							},
-						}));
+						if (resourceType === "TASK") {
+							newResources = jsonRes.data.map((t: any) => ({
+								name: t.name,
+								id: t.id,
+								tags: {
+									type: "TASK",
+									color: t.color,
+								},
+							}));
+						} else {
+							newResources = jsonRes.data.map((r: any) => ({
+								name: r.name,
+								id: r.id,
+								tags: {
+									division: r.user?.profile?.division?.name,
+									divisionCode:
+										r.user?.profile?.division?.code,
+									divisionColor:
+										r.user?.profile?.division?.color,
+									position: r.user?.profile?.position,
+									initials: r.user?.profile?.initials,
+								},
+							}));
+						}
 						setResources(newResources);
 					}
 				}
 
-				// 2. Fetch events
-				let days = fetchDays();
-				const start = startDate.toString("yyyy-MM-dd");
-				const end = startDate.addDays(days).toString("yyyy-MM-dd");
-
+				// 3. Fetch events
 				const eventParams = new URLSearchParams({
 					start: start,
 					end: end,

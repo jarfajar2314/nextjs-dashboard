@@ -10,6 +10,8 @@ export type ScheduleResource = {
 	resourceTypeId: string;
 	resourceType: ResourceType;
 	isActive: boolean;
+	code?: string | null;
+	color?: string | null;
 	userId?: string;
 	user?: any;
 };
