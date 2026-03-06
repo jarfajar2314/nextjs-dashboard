@@ -19,11 +19,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ColorPicker, COLORS } from "@/components/color-picker";
+
+// Global counter for rotating color
+let nextColorIndex = 0;
 
 // Minimal Zod Schema
 const quickCreateSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	description: z.string().optional(),
+	code: z.string().optional().nullable(),
 });
 
 type QuickCreateFormValues = z.infer<typeof quickCreateSchema>;
@@ -50,25 +55,46 @@ export function TaskQuickCreateModal({
 	view,
 }: TaskQuickCreateModalProps) {
 	const [statusId, setStatusId] = useState<string>("");
+	const [color, setColor] = useState<string>(COLORS[0].value);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const {
 		register,
 		handleSubmit,
 		reset,
-		formState: { errors },
+		watch,
+		setValue,
+		formState: { errors, dirtyFields },
 	} = useForm<QuickCreateFormValues>({
 		resolver: zodResolver(quickCreateSchema),
 		defaultValues: {
 			title: "",
 			description: "",
+			code: "",
 		},
 	});
+
+	const watchedTitle = watch("title");
+
+	useEffect(() => {
+		if (isOpen && watchedTitle && !dirtyFields.code) {
+			const codified = watchedTitle
+				.toUpperCase()
+				.trim()
+				.replace(/[^A-Z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, "");
+			setValue("code", codified);
+		}
+	}, [watchedTitle, setValue, dirtyFields.code, isOpen]);
 
 	// Fetch default status once
 	useEffect(() => {
 		if (isOpen) {
 			reset();
+			// Pick next color in rotation
+			setColor(COLORS[nextColorIndex].value);
+			nextColorIndex = (nextColorIndex + 1) % COLORS.length;
+
 			const fetchDefaultStatus = async () => {
 				try {
 					const res = await fetch("/api/task-statuses");
@@ -113,7 +139,7 @@ export function TaskQuickCreateModal({
 				type: "TASK",
 				priority: "MEDIUM",
 				allDay: isAllDayCheck,
-				color: "#3b82f6",
+				color,
 			};
 
 			const response = await fetch("/api/tasks", {
@@ -216,8 +242,24 @@ export function TaskQuickCreateModal({
 							id="description"
 							{...register("description")}
 							placeholder="Brief description (optional)..."
-							className="h-20 max-h-40"
 						/>
+					</div>
+
+					<div className="space-y-2">
+						<Label htmlFor="code">Code</Label>
+						<Input
+							id="code"
+							{...register("code")}
+							placeholder="e.g. task-id-123"
+						/>
+						<p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+							Auto-generated from title, but editable
+						</p>
+					</div>
+
+					<div className="space-y-2">
+						<Label>Color</Label>
+						<ColorPicker value={color} onChange={setColor} />
 					</div>
 
 					<DialogFooter className="pt-2">

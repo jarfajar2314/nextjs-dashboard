@@ -1,23 +1,7 @@
 "use client";
 
 import { useSidebar } from "./sidebar-context";
-import {
-	LayoutDashboard,
-	Settings,
-	RocketIcon,
-	User,
-	ChevronRight,
-	UserCircle,
-	ShieldCheck,
-	Inbox,
-	GitBranch,
-	UserCheck,
-	HeartPulse,
-	FileSearch,
-	HelpCircle,
-	FileText,
-	Calendar,
-} from "lucide-react";
+import { RocketIcon, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { useEffect, useMemo, useRef, useState } from "react";
