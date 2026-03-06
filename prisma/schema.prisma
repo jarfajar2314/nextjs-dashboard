@@ -358,6 +358,8 @@ model Task {
   color       String?       @db.VarChar(20)
   labels      TaskLabel[]
 
+  code        String?
+
   resources TaskResource[]
 
   // Auditable columns

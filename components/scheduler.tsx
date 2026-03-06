@@ -455,7 +455,7 @@ const Scheduler: React.FC = () => {
 				if (isOnLeave) {
 					args.cell.properties.backColor = "#fee2e2"; // Light red (Tailwind red-100)
 					args.cell.properties.html =
-						'<div style="position: absolute; bottom: 2px; right: 2px; color: #ef4444; font-size: 8px; font-weight: 600;">OFF</div>';
+						'<div style="position: absolute; top: 2px; left: 2px; color: #ef4444; font-size: 10px; font-weight: 700;">OFF</div>';
 				}
 			}
 		}
@@ -767,11 +767,11 @@ const Scheduler: React.FC = () => {
 						startDate={startDate}
 						days={schedulerProps.days}
 						scale={schedulerProps.scale}
-						eventHeight={70}
+						eventHeight={80}
 						timeHeaders={schedulerProps.timeHeaders}
 						cellWidth={schedulerProps.cellWidth}
-						rowMarginTop={2}
-						rowMarginBottom={2}
+						rowMarginTop={18}
+						rowMarginBottom={4}
 						resources={resources}
 						events={events}
 						onEventMoved={onEventMoved}
